@@ -1,6 +1,7 @@
 '''This module contains functions used for data processing'''
 import pandas as pd
 import pdb
+import confidential
 
 def small_load(fileloc):
     '''this function takes a file location as input and outputs a dataframe with
@@ -11,9 +12,7 @@ def small_load(fileloc):
     df -- pandas dataframe with simplified columns
     By: David Martin
     On: Jan 9, 2018'''
-    cols = ['ProductId', 'AreaId', 'SalesTypeId',
-            'CurQty', 'CurRev', 'Cost', 'CurPrice',
-            'NumPriceChangeEventsCount']
+    cols = confidential.small_load_columns()
     df = pd.read_csv(fileloc, usecols=cols)
     convert_dol_to_num(df)
     return df
@@ -44,3 +43,11 @@ def fix_dol(x):
         if x[0] == '$':
             return float(x[1:])
     return x
+
+def main():
+    '''This process builds the general dataframe for use in other modules'''
+    fileloc=confidential.filelocation()
+    df = pd.read_csv(fileloc)
+    convert_dol_to_num(df)
+    confidential.feature_engineer(df)
+    return df
