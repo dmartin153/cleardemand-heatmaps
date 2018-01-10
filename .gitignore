@@ -103,3 +103,4 @@ ENV/
 # confidential information
 data/
 figures/
+confidential.py
