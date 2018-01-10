@@ -10,7 +10,7 @@ import pdb
 
 def build_basic_heatmap(df, index, column, value):
     '''This function builds a heatmap to look at the given value over various
-    index and columns. Sorts by the sortby value, defaulting to the value.
+    index and columns. Sorts by the value.
     Inputs:
     df -- pandas dataframe with the data
     index -- column to use as the index of the pivot table
@@ -24,8 +24,8 @@ def build_basic_heatmap(df, index, column, value):
     sns.set()
     name = '{val}_heatmap__{ind}_vs_{col}'.format(val=value, ind=index, col=column)
     pt = df.pivot_table(index=index, columns=column, values=value, aggfunc=np.mean)
-    main_column = np.argmax(df.groupby(column)[value].sum())
-    main_index = np.argmax(df.groupby(index)[value].sum())
+    main_column = np.argmax(df.groupby(column)[value].var())
+    main_index = np.argmax(df.groupby(index)[value].var())
     pt.sort_values(by=main_column, axis=0, inplace=True, ascending=True, na_position='first')
     pt.sort_values(by=main_index, axis=1, inplace=True, ascending=True, na_position='first')
     fig = plt.figure()
@@ -35,6 +35,38 @@ def build_basic_heatmap(df, index, column, value):
     ax.set_title(name.replace('_',' '))
     fig.tight_layout()
     saveloc='figures/basic_heatmaps/'
+    check_dir(saveloc)
+    fig.savefig(saveloc+name+'.jpg')
+    plt.close(fig)
+
+def build_sorted_heatmap(df, index, column, value, sortby=None):
+    '''This function builds a heatmap to look at the given value over various
+    index and columns. Sorts by the sortby column. Defaults to the value.
+    Inputs:
+    df -- pandas dataframe with the data
+    index -- column to use as the index of the pivot table
+    column -- column to use as the columns of the pivot table
+    value -- value to plot on the heatmap, also what the heatmap is sorted by
+    sortby -- column to use to sort the heatmap
+    Outputs:
+    None
+    Saves a jpeg in figures/sorted_heatmaps/
+    By: David Martin
+    On: Jan 10, 2018'''
+    sns.set()
+    name = '{val}_heatmap__{ind}_vs_{col}_by_{sort}'.format(val=value, ind=index, col=column, sort=sortby)
+    pt = df.pivot_table(index=index, columns=column, values=[value,sortby], aggfunc=np.mean)
+    main_column = np.argmax(df.groupby(column)[value].var())
+    main_index = np.argmax(df.groupby(index)[value].var())
+    pt.sort_values(by=(sortby,main_column), axis=0, inplace=True, ascending=True, na_position='first')
+    pt.sort_values(by=main_index, axis=1, inplace=True, ascending=True, na_position='first')
+    fig = plt.figure()
+    ax = sns.heatmap(pt[value])
+    ax.set_yticklabels(ax.get_yticklabels(),rotation=0)
+    ax.set_xticklabels(ax.get_xticklabels(),rotation=90)
+    ax.set_title(name.replace('_',' '))
+    fig.tight_layout()
+    saveloc='figures/sorted_heatmaps/'
     check_dir(saveloc)
     fig.savefig(saveloc+name+'.jpg')
     plt.close(fig)
