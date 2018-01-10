@@ -18,7 +18,9 @@ def kmeans_cluster(df,cols=['Cost'],n_clusters=3):
     Outputs:
     model -- a fit kmeans cluster built with the provided parameters'''
     kmeans = KMeans(n_clusters=n_clusters)
+    scaler = StandardScaler()
     X = np.array(df[cols])
+    X = scaler.fit_transform(X)
     kmeans.fit(X)
     return kmeans
 
@@ -35,11 +37,15 @@ def elbow_plot(df,cols=['Cost']):
     scaler = StandardScaler()
     X = np.array(df[cols])
     X = scaler.fit_transform(X)
-    for i in range(1,11):
+    for i in range(1,20):
         model = KMeans(n_clusters=i,random_state=1)
         model.fit(X)
         wcss.append(model.inertia_)
-    plt.plot(range(1,11), wcss,'.')
+    fig = plt.figure()
+    plt.plot(range(1,20), wcss,'.')
+    plt.xlabel('Clusters (#)')
+    plt.ylabel('WCSS')
+    fig.show()
 
 def hierarchical_cluster(df,cols=['Cost'], n_clusters=3):
     '''This function builds and returns a basic hierarchical cluster for the provided
@@ -50,7 +56,9 @@ def hierarchical_cluster(df,cols=['Cost'], n_clusters=3):
     Outputs:
     model -- a fit Agglomerative cluster built with the provided parameters'''
     hier = AgglomerativeClustering(n_clusters=n_clusters)
+    scaler = StandardScaler()
     X = np.array(df[cols])
+    X = scaler.fit_transform(X)
     hier.fit(X)
     return hier
 
@@ -67,6 +75,8 @@ def perform_pca(df,cols=None,n_components=3):
         X = df[cols].values
     else:
         X = df.select_dtypes([int,float]).fillna(0).values
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
     pca.fit(X)
     return pca
 
