@@ -71,7 +71,7 @@ y_axis = Select(title='Y axis', options=cols, value=default_y)
 #Column to use for division
 division_cat = Select(title='Subdivision Category', options=cols, value=default_div[0])
 #Value to set division category equal to
-division_val = TextInput(title='Subdivision Value', value='1')
+division_val = TextInput(title='Subdivision Value (int)', value='1')
 
 #Set how controls impact changes
 controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val]
