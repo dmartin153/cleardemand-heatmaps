@@ -1,8 +1,5 @@
-from random import random
-
+'''This module contains helper functions for the heatmap application'''
 from bokeh.layouts import column
-from bokeh.models import Button
-from bokeh.palettes import RdYlBu3
 from bokeh.plotting import figure, curdoc
 import logging
 logging.basicConfig()
@@ -21,14 +18,14 @@ from bokeh.models import (
 from bokeh.palettes import Viridis6 as palette
 from bokeh.plotting import figure
 from bokeh.layouts import widgetbox
-from bokeh.models.widgets import Dropdown
 import data_processing
 from math import pi
 import pdb
 import confidential
 import helpers
+
 def build_source(x_col='default',y_col='default', value='default', sort_columns=['default'],x_name='default',y_name='default'):
-    '''this builds a heatmap'''
+    '''this builds the source for a heatmap'''
     #build Defaults
     if x_col == 'default':
         x_col = confidential.x_col()
@@ -45,8 +42,6 @@ def build_source(x_col='default',y_col='default', value='default', sort_columns=
     division = confidential.division()
 
     df = clean_df(sort_columns, division)
-    # df = df[df[division[0]] == division[1]]
-    # df.sort_values(by=sort_columns, inplace=True)
     raw_xs = df[x_col].unique()
     raw_ys = df[y_col].unique()
     interpret_xs = [(ind, raw_x) for ind,raw_x in enumerate(raw_xs)]
@@ -78,20 +73,21 @@ def build_source(x_col='default',y_col='default', value='default', sort_columns=
     return source
 
 def build_mapper(source):
+    '''This function builds a mapper and color_bar for a graph given the source'''
     mapper = LinearColorMapper(palette='Magma256', low=min(source.data['val']), high=max(source.data['val']))
     color_bar = ColorBar(color_mapper=mapper, ticker=BasicTicker(),
                         label_standoff=12, border_line_color=None, location = (0,0))
     return mapper, color_bar
 
 def clean_df(sort_columns, division):
+    '''This function builds a pandas dataframe with the division and sorting provided'''
     df = data_processing.main()
     df = df[df[division[0]] == division[1]]
     df.sort_values(by=sort_columns, inplace=True)
     return df
 
 def general_heatmap(source,x_col='default',y_col='default', value='default', sort_columns=['default'],x_name='default',y_name='default'):
-    '''this builds a heatmap'''
-    # #build Defaults
+    '''this function builds and returns a Bokeh figure of the heatmap'''
     if sort_columns == ['default']:
         sort_columns = confidential.sort_columns()
     division = confidential.division()
@@ -121,6 +117,7 @@ def general_heatmap(source,x_col='default',y_col='default', value='default', sor
     return p, mapper
 
 def build_hover(p,source, x_name='default', y_name='default', value='default'):
+    '''This function updates the hovertool of the figure provided'''
     if x_name == 'default':
         x_name = confidential.x_name()
     if y_name == 'default':
