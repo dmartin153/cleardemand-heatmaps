@@ -95,7 +95,7 @@ def general_heatmap(source,x_col='default',y_col='default', value='default', sor
     TOOLS = "pan,wheel_zoom,reset,hover,save"
 
     p = figure(
-        title="Store Cost", tools=TOOLS,
+        title="Interactive Heatmap", tools=TOOLS,
         x_axis_location='above',
         toolbar_location='below'
     )

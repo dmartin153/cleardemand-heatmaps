@@ -34,14 +34,15 @@ _, color_bar = helpers.build_mapper(source)
 p.add_layout(color_bar, 'right')
 #Instantiate a dataframe to reference columns
 df = data_processing.main()
-cols = list(df.columns)
+cols = list(df.select_dtypes([int,float]).columns)
 init_val = confidential.value()
-
+default_x = confidential.x_col()
+default_y = confidential.y_col()
 
 def update():
     '''This method updates the figure based on user inputs to the controls'''
     #Build a new source
-    n_source = helpers.build_source(sort_columns=[sorted_by.value], value=target.value)
+    n_source = helpers.build_source(x_col=x_axis.value, y_col=y_axis.value, sort_columns=[sorted_by.value], value=target.value)
     #Build a new mapper
     n_mapper,_ = helpers.build_mapper(n_source)
     #Update the old source with the new source's data
@@ -59,9 +60,14 @@ def update():
 sorted_by = Select(title="Sort By", options=cols, value=init_val)
 #Column to use as a target for plotting
 target = Select(title='Target', options=cols, value=init_val)
+#Colun to use to set x axis
+x_axis = Select(title='X axis', options=cols, value=default_x)
+#Column to use to set y axis
+y_axis = Select(title='Y axis', options=cols, value=default_y)
+
 
 #Set how controls impact changes
-controls = [sorted_by, target]
+controls = [sorted_by, target, x_axis, y_axis]
 for control in controls:
     control.on_change('value', lambda attr, old, new: update())
 
