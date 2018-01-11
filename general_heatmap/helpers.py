@@ -24,7 +24,8 @@ import pdb
 import confidential
 import helpers
 
-def build_source(x_col='default',y_col='default', value='default', sort_columns=['default'],x_name='default',y_name='default'):
+def build_source(x_col='default',y_col='default', value='default',
+    sort_columns=['default'],x_name='default',y_name='default', division='default'):
     '''this builds the source for a heatmap'''
     #build Defaults
     if x_col == 'default':
@@ -39,7 +40,8 @@ def build_source(x_col='default',y_col='default', value='default', sort_columns=
         x_name = confidential.x_name()
     if y_name == 'default':
         y_name = confidential.y_name()
-    division = confidential.division()
+    if division == 'default':
+        division = confidential.division()
 
     df = clean_df(sort_columns, division)
     raw_xs = df[x_col].unique()

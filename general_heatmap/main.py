@@ -17,7 +17,7 @@ from bokeh.models import (
 )
 from bokeh.plotting import figure
 from bokeh.layouts import widgetbox, layout
-from bokeh.models.widgets import Select
+from bokeh.models.widgets import Select, TextInput
 import data_processing
 from math import pi
 import pdb
@@ -35,14 +35,18 @@ p.add_layout(color_bar, 'right')
 #Instantiate a dataframe to reference columns
 df = data_processing.main()
 cols = list(df.select_dtypes([int,float]).columns)
+#Load defaults for selection menues
 init_val = confidential.value()
 default_x = confidential.x_col()
 default_y = confidential.y_col()
+default_div = confidential.division()
 
 def update():
     '''This method updates the figure based on user inputs to the controls'''
     #Build a new source
-    n_source = helpers.build_source(x_col=x_axis.value, y_col=y_axis.value, sort_columns=[sorted_by.value], value=target.value)
+    n_source = helpers.build_source(x_col=x_axis.value, y_col=y_axis.value,
+                                    sort_columns=[sorted_by.value], value=target.value,
+                                    division=(division_cat.value, int(division_val.value)))
     #Build a new mapper
     n_mapper,_ = helpers.build_mapper(n_source)
     #Update the old source with the new source's data
@@ -64,10 +68,13 @@ target = Select(title='Target', options=cols, value=init_val)
 x_axis = Select(title='X axis', options=cols, value=default_x)
 #Column to use to set y axis
 y_axis = Select(title='Y axis', options=cols, value=default_y)
-
+#Column to use for division
+division_cat = Select(title='Subdivision Category', options=cols, value=default_div[0])
+#Value to set division category equal to
+division_val = TextInput(title='Subdivision Value', value='1')
 
 #Set how controls impact changes
-controls = [sorted_by, target, x_axis, y_axis]
+controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val]
 for control in controls:
     control.on_change('value', lambda attr, old, new: update())
 
