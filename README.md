@@ -21,5 +21,7 @@ This file contains functions used for saving plots. Currently, this includes:
 ## general_heatmap
 This folder contains the code to run the heatmap app through Bokeh. It can be run
 by entering the command
+
 `bokeh serve --show general_heatmap`
+
 from the main directory
