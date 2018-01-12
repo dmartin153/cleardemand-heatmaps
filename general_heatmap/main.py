@@ -17,7 +17,7 @@ from bokeh.models import (
 )
 from bokeh.plotting import figure
 from bokeh.layouts import widgetbox, layout
-from bokeh.models.widgets import Select, TextInput
+from bokeh.models.widgets import Select, TextInput, RadioGroup
 import data_processing
 from math import pi
 import pdb
@@ -46,7 +46,8 @@ def update():
     #Build a new source
     n_source = helpers.build_source(x_col=x_axis.value, y_col=y_axis.value,
                                     sort_columns=[sorted_by.value], value=target.value,
-                                    division=(division_cat.value, int(division_val.value)))
+                                    division=(division_cat.value, int(division_val.value)),
+                                    mini=mini_val.value, maxi=maxi_val.value)
     #Build a new mapper
     n_mapper,_ = helpers.build_mapper(n_source)
     #Update the old source with the new source's data
@@ -72,12 +73,18 @@ y_axis = Select(title='Y axis', options=cols, value=default_y)
 division_cat = Select(title='Subdivision Category', options=cols, value=default_div[0])
 #Value to set division category equal to
 division_val = TextInput(title='Subdivision Value (int)', value='1')
+# #Linear or log based color mapper
+# color_mapper = RadioGroup(labels=['Linear Scale', 'Log Scale'], active=0)
+# color_mapper.on_change('active', lambda attr, old, new: update())
+mini_val = TextInput(title='Minimum target value (float)', value='-inf')
+maxi_val = TextInput(title='Maximum target value (float)', value='inf')
 
 #Set how controls impact changes
-controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val]
+controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val, mini_val, maxi_val]
 for control in controls:
     control.on_change('value', lambda attr, old, new: update())
 
+# controls.append(color_mapper)
 ### Build the final displace
 inputs = widgetbox(*controls)
 l = layout([

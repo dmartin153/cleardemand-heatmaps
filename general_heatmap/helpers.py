@@ -23,9 +23,12 @@ from math import pi
 import pdb
 import confidential
 import helpers
+import numpy as np
+
 
 def build_source(x_col='default',y_col='default', value='default',
-    sort_columns=['default'],x_name='default',y_name='default', division='default'):
+    sort_columns=['default'],x_name='default',y_name='default', division='default',
+    mini='-inf', maxi='inf'):
     '''this builds the source for a heatmap'''
     #build Defaults
     if x_col == 'default':
@@ -43,7 +46,7 @@ def build_source(x_col='default',y_col='default', value='default',
     if division == 'default':
         division = confidential.division()
 
-    df = clean_df(sort_columns, division)
+    df = clean_df(sort_columns, division, value=value, mini=mini, maxi=maxi)
     raw_xs = df[x_col].unique()
     raw_ys = df[y_col].unique()
     interpret_xs = [(ind, raw_x) for ind,raw_x in enumerate(raw_xs)]
@@ -74,26 +77,40 @@ def build_source(x_col='default',y_col='default', value='default',
     ))
     return source
 
-def build_mapper(source):
+def build_mapper(source, scale=0):
     '''This function builds a mapper and color_bar for a graph given the source'''
-    mapper = LinearColorMapper(palette='Magma256', low=min(source.data['val']), high=max(source.data['val']))
-    color_bar = ColorBar(color_mapper=mapper, ticker=BasicTicker(),
-                        label_standoff=12, border_line_color=None, location = (0,0))
+    pal='Plasma256'
+    if scale==0:
+        mapper = LinearColorMapper(palette=pal, low=min(source.data['val']), high=max(source.data['val']))
+        color_bar = ColorBar(color_mapper=mapper, ticker=BasicTicker(),
+                            label_standoff=12, border_line_color=None, location = (0,0))
+    elif scale==1:
+        mapper = LogColorMapper(palette=pal, low=min(source.data['val']), high=max(source.data['val']))
+        color_bar = ColorBar(color_mapper=mapper, ticker=LogTicker(),
+                            label_standoff=12, border_line_color=None, location = (0,0))
     return mapper, color_bar
 
-def clean_df(sort_columns, division):
+def clean_df(sort_columns, division, value='default', mini='-inf', maxi='inf'):
     '''This function builds a pandas dataframe with the division and sorting provided'''
     df = data_processing.main()
     df = df[df[division[0]] == division[1]]
     df.sort_values(by=sort_columns, inplace=True)
+    if value == 'default':
+        value = confidential.value()
+    mini = np.float(mini)
+    maxi = np.float(maxi)
+    df.drop(df[df[value] < mini].index,inplace = True)
+    df.drop(df[df[value] > maxi].index,inplace = True)
     return df
 
-def general_heatmap(source,x_col='default',y_col='default', value='default', sort_columns=['default'],x_name='default',y_name='default'):
+def general_heatmap(source,x_col='default',y_col='default', value='default',
+        sort_columns=['default'],x_name='default',y_name='default', mini='-inf',
+        maxi='inf'):
     '''this function builds and returns a Bokeh figure of the heatmap'''
     if sort_columns == ['default']:
         sort_columns = confidential.sort_columns()
     division = confidential.division()
-    df = clean_df(sort_columns, division)
+    df = clean_df(sort_columns, division, value=value, mini=mini, maxi=maxi)
     TOOLS = "pan,wheel_zoom,reset,hover,save"
 
     p = figure(
