@@ -28,7 +28,7 @@ import numpy as np
 
 def build_source(x_col='default',y_col='default', value='default',
     sort_columns=['default'],x_name='default',y_name='default', division='default',
-    mini='-inf', maxi='inf'):
+    mini='-inf', maxi='inf', diff='default'):
     '''this builds the source for a heatmap'''
     #build Defaults
     if x_col == 'default':
@@ -45,6 +45,8 @@ def build_source(x_col='default',y_col='default', value='default',
         y_name = confidential.y_name()
     if division == 'default':
         division = confidential.division()
+    if diff == 'default':
+        diff = confidential.difference()
 
     df = clean_df(sort_columns, division, value=value, mini=mini, maxi=maxi)
     raw_xs = df[x_col].unique()
@@ -67,13 +69,14 @@ def build_source(x_col='default',y_col='default', value='default',
     x_names = df[x_name].values
 
     target = df[value].values
+    normalization = df[diff].values
 
     source = ColumnDataSource(data=dict(
         x=x_locs,
         y=y_locs,
         x_name=x_names,
         y_name=y_names,
-        val=target,
+        val=target - normalization,
     ))
     return source
 

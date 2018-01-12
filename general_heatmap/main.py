@@ -40,6 +40,7 @@ init_val = confidential.value()
 default_x = confidential.x_col()
 default_y = confidential.y_col()
 default_div = confidential.division()
+init_diff = confidential.difference()
 
 def update():
     '''This method updates the figure based on user inputs to the controls'''
@@ -47,7 +48,8 @@ def update():
     n_source = helpers.build_source(x_col=x_axis.value, y_col=y_axis.value,
                                     sort_columns=[sorted_by.value], value=target.value,
                                     division=(division_cat.value, int(division_val.value)),
-                                    mini=mini_val.value, maxi=maxi_val.value)
+                                    mini=mini_val.value, maxi=maxi_val.value,
+                                    diff=difference.value)
     #Build a new mapper
     n_mapper,_ = helpers.build_mapper(n_source)
     #Update the old source with the new source's data
@@ -78,9 +80,10 @@ division_val = TextInput(title='Subdivision Value (int)', value='1')
 # color_mapper.on_change('active', lambda attr, old, new: update())
 mini_val = TextInput(title='Minimum target value (float)', value='-inf')
 maxi_val = TextInput(title='Maximum target value (float)', value='inf')
+difference = Select(title='Difference From', options=cols, value=init_diff)
 
 #Set how controls impact changes
-controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val, mini_val, maxi_val]
+controls = [sorted_by, target, x_axis, y_axis, division_cat, division_val, mini_val, maxi_val, difference]
 for control in controls:
     control.on_change('value', lambda attr, old, new: update())
 
