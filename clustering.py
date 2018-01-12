@@ -17,7 +17,7 @@ def kmeans_cluster(df,cols=['Cost'],n_clusters=3):
     cols -- array of columns to use for clustering, defaults to using just the Cost column
     Outputs:
     model -- a fit kmeans cluster built with the provided parameters'''
-    kmeans = KMeans(n_clusters=n_clusters)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=1)
     scaler = StandardScaler()
     X = np.array(df[cols])
     X = scaler.fit_transform(X)
