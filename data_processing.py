@@ -49,5 +49,4 @@ def main():
     fileloc=confidential.filelocation()
     df = pd.read_csv(fileloc)
     convert_dol_to_num(df)
-    confidential.feature_engineer(df)
     return df
