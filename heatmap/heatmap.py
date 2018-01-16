@@ -35,6 +35,8 @@ class HeatMap(object):
         self.p.axis.major_label_text_font_size = '12pt'
         self.p.axis.major_label_standoff = 0
         self.p.xaxis.major_label_orientation = pi / 3
+        self.p.xaxis.axis_label = self.heatgrid.x_axis
+        self.p.yaxis.axis_label = self.heatgrid.y_axis
 
         self.build_mapper()
 
@@ -82,7 +84,7 @@ class HeatGrid(object):
 
     def __init__(self, df=None, target='CurPrice', sortby='CurRev', normalization=1,
                 x_axis='ProductId', y_axis='AreaId', selection_criteria={'SalesTypeId':1},
-                x_display='ProductDescription', y_display='AreaName'):
+                x_display='ProductDescription', y_display='AreaId'):
         '''Initialize the class '''
         self.df = df
         self.target = target
@@ -135,10 +137,6 @@ class HeatGrid(object):
 
     def build_axes_interpreters(self):
         '''This method builds the interpreters for the x and y axes'''
-        #sort the dataframe
-        # self.df.reindex_axis(self.df.mean().sort_values().index, axis=1)
-        # self.df.sort_values(by=self.sortby, inplace=True)
-
         raw_xs = self.df[self.x_axis].unique()
         raw_ys = self.df[self.y_axis].unique()
 
