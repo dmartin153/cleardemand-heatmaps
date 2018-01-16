@@ -8,11 +8,10 @@ from bokeh.models import (
     BasicTicker
 )
 import pdb
-import confidential
 from math import pi
 from bokeh.plotting import figure
 import numpy as np
-
+from bokeh.palettes import RdYlGn10 as pal
 
 class HeatMap(object):
     '''This class contains information used in the heatmap'''
@@ -66,6 +65,7 @@ class HeatMap(object):
         self.source = ColumnDataSource(data)
         self.generate_figure()
         self.hovertool()
+        self.p.add_layout(self.color_bar, 'right')
 
     def update(self):
         '''This method updates the plot with new features'''
@@ -81,7 +81,8 @@ class HeatGrid(object):
     '''This class is used to populat the grid of the heatmap'''
 
     def __init__(self, df=None, target='CurPrice', sortby='CurRev', normalization=1,
-                x_axis='ProductId', y_axis='AreaId', selection_criteria={'SalesTypeId':1}):
+                x_axis='ProductId', y_axis='AreaId', selection_criteria={'SalesTypeId':1},
+                x_display='ProductDescription', y_display='AreaName'):
         '''Initialize the class '''
         self.df = df
         self.target = target
@@ -90,6 +91,8 @@ class HeatGrid(object):
         self.x_axis = x_axis
         self.y_axis = y_axis
         self.selection_criteria =selection_criteria
+        self.x_display = x_display
+        self.y_display = y_display
 
     def generate_grid(self):
         '''This method generates the x and y locations and the target for the
@@ -102,30 +105,33 @@ class HeatGrid(object):
         x_locs = [self.interpret_xs[x] for x in self.df[self.x_axis].values]
         y_locs = [self.interpret_ys[y] for y in self.df[self.y_axis].values]
 
-
-        if self.normalization == 0: #If no normalization
-            target = self.df[self.target].values
-        elif self.normalization == 1: #If normalizing across columns axis
+        #Grab the target without any normalization
+        target = self.df[self.target].values
+        if self.normalization == 1: #If normalizing across columns axis
+            #Find the average target for each x value
             x_avgs = dict()
             for true_x, x_loc in self.interpret_xs.iteritems():
                 x_avg = self.df[self.df[self.x_axis]==true_x][self.target].mean()
                 x_avgs[x_loc] = x_avg
-            target = self.df[self.target].values - [x_avgs[x_loc] for x_loc in x_locs]
+            #Subtract the average value from each point
+            target = target - [x_avgs[x_loc] for x_loc in x_locs]
         elif self.normalization == 2: #If normalizing across rows axis
+            #Find the average target for each y value
             y_avgs = dict()
             for true_y, y_loc in self.interpret_ys.iteritems():
                 y_avg = self.df[self.df[self.y_axis]==true_y][self.target].mean()
                 y_avgs[y_loc] = y_avg
-            target = self.df[self.target].values - [y_avgs[y_loc] for y_loc in y_locs]
+            #Subtract the average value from each point
+            target = target - [y_avgs[y_loc] for y_loc in y_locs]
 
-        x_names = self.df[self.x_axis]
-        y_names = self.df[self.y_axis]
+        x_names = self.df[self.x_display]
+        y_names = self.df[self.y_display]
 
         return x_locs, y_locs, x_names, y_names, target
 
-    def grab_data(self):
+    def grab_data(self,datafile='PriceBook.csv'):
         '''This method grabs new data and puts it in the dataframe'''
-        self.df = data_processing.main()
+        self.df = data_processing.main(datafile)
 
     def build_axes_interpreters(self):
         '''This method builds the interpreters for the x and y axes'''
