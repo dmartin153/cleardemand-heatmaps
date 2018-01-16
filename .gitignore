@@ -104,6 +104,7 @@ ENV/
 data/
 figures/
 confidential.py
+*.csv
 
 # html code
 *.html
