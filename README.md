@@ -10,7 +10,12 @@ Once bokeh is installed, data must be stored in the base directory in a csv file
 from the repository's root directory. This will open a web page with the interactive heatmap.
 
 ## heatmap
-This folder contains the primary code used for the interactive bokeh heatmap
+This folder contains the code to run the heatmap app through Bokeh. It can be run
+by entering the command
+
+`bokeh serve --show heatmap`
+
+from the main directory, assuming it can access a csv file called 'PriceBook.csv'.
 
 ### heatmap.py
 This file contains the two classes used by the heatmap
@@ -36,12 +41,8 @@ This file contains functions used for clustering models and analysis. Not curren
 
 ## plotter.py
 This file contains functions used for saving basic plots. Not used by the interactive Bokeh heatmap. Currently, this includes:
-- build_heatmap -- function used to make a heatmap
-
-## heatmap
-This folder contains the code to run the heatmap app through Bokeh. It can be run
-by entering the command
-
-`bokeh serve --show heatmap`
-
-from the main directory, assuming it can access an appropriate csv file.
+- build_basic_heatmap -- function used to make a heatmap
+- build_sorted_heatmap -- function used to make a crudely sorted heatmap
+- correlation_plots -- function used to make correlation plots off different columns
+- drop_nans -- function used to drop missing rows for correlation_plots
+- check_dir -- function used to make new folders when necessary for plot storage locations
