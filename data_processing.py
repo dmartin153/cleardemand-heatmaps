@@ -44,9 +44,10 @@ def fix_dol(x):
             return float(x[1:])
     return x
 
-def main():
+def main(fileloc=None):
     '''This process builds the general dataframe for use in other modules'''
-    fileloc=confidential.filelocation()
+    if fileloc == None:
+        fileloc=confidential.filelocation()
     df = pd.read_csv(fileloc)
     convert_dol_to_num(df)
     return df
