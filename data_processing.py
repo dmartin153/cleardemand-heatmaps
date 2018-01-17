@@ -47,7 +47,44 @@ def fix_dol(x):
 def main(fileloc=None):
     '''This process builds the general dataframe for use in other modules'''
     if fileloc == None:
-        fileloc=confidential.filelocation()
+        fileloc='PriceBook.csv'
     df = pd.read_csv(fileloc)
     convert_dol_to_num(df)
     return df
+
+def build_num_prices(df):
+    '''this function adds columns of "NumIdenticalPrices" and "NumTotalProducts."
+    NumIdenticalPrices -- the number of identical prices that product has
+    NumTotalProducts -- the number of this product available in the database'''
+    for product in df['ProductId'].unique():
+        prices_series = df[df['ProductId']==product]['CurPrice'].value_counts()
+        for key in prices_series.keys():
+            indicies = df[(df['ProductId'] == product) & (df['CurPrice'] == key)].index
+            df.loc[indicies,'NumIdenticalPrices'] = prices_series[key]
+            df.loc[indicies,'NumTotalProducts'] = sum(prices_series)
+
+def build_success_metrics(df):
+    '''this function adds columns of "NormAreaProfit", "NormAreaRev", "Strategy",
+    "RegretRev", "RegretProfit", "NormProductProfit", ad "NormProductRev'"
+    "NormAreaProfit" -- number of standard deviationns from the average profit in that area
+    "NormAreaRev" -- number of standard deviations from the average revenue in that area
+    "NormProductProfit" -- number of standard deviations from the average profit for that product
+    "NormProductRev" -- number of standard deviations from the average revenue for that product
+    "CurStrategy" -- CurProfit / CurRevenue
+    "RecStrategy" -- RecProfit / RecRevenue
+    "RegretRev" -- Difference  between recommended revenue and current revenue
+    "RegretProfit" -- Difference between Recommended Profit and current profit'''
+    metrics  = ['Profit', 'Rev']
+    norm_tos = ['Product', 'Area']
+    for metric in metrics:
+        for norm_to in norm_tos:
+            for product in df['{}Id'.format(norm_to)].unique():
+                inds = df[df['{}Id'.format(norm_to)]==product].index
+                target = 'Cur{}'.format(metric)
+                avg = df.loc[inds,target].mean()
+                std = df.loc[inds,target].std()
+                df.loc[inds,'Norm{}{}'.format(norm_to,metric)] = (df.loc[inds,target] - avg) / std
+    df['CurStrategy'] = df['CurProfit'] / df['CurRev']
+    df['RecStrategy'] = df['RecProfit'] / df['RecRev']
+    df['RegretRev'] = df['CurRev'] - df['RecRev']
+    df['RegretProfit'] = df['CurProfit'] - df['RecProfit']
