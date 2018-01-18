@@ -6,6 +6,10 @@ import seaborn as sns
 import numpy as np
 import os
 import pdb
+import evaluation
+import itertools
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 
 def build_basic_heatmap(df, index, column, value):
@@ -105,3 +109,76 @@ def check_dir(location):
     Only works for one layer.'''
     if not os.path.exists(location):
         os.makedirs(location)
+
+def build_ppf(df):
+    '''This function builds the production possibility frontier for the given data frame'''
+    price_variations_to_try = np.arange(-1., 1.01, 0.01)
+    prof_points = []
+    rev_points = []
+    for index, row in df.iterrows():
+        beta = row['FcstBeta']
+        q = row['Q']
+        cost = row['Cost']
+        pot_revs = []
+        pot_profs = []
+        for price_variation in price_variations_to_try:
+            price = row['CurPrice'] + price_variation
+            rev = evaluation.calculate_revenue(price, beta, q)
+            prof = evaluation.calculate_profit(price,beta, q, cost)
+            pot_revs.append(rev)
+            pot_profs.append(prof)
+        max_rev_ind = np.argmax(pot_revs)
+        max_prof_ind = np.argmax(pot_profs)
+        inds = np.array([np.argmax(pot_revs), np.argmax(pot_profs)])
+        prof_points.append(np.array(pot_profs)[inds])
+        rev_points.append(np.array(pot_revs)[inds])
+    df['KeyProfitPoints'] = prof_points
+    df['KeyRevPoints'] = rev_points
+
+def plot_ppf(df):
+    '''this function plots a basic production possibility frontier'''
+    row_index = df.index
+    label = 'KeyProfitPoints'
+    keypoints = df[label]
+    clusters = df['cluster_labels'].unique()
+    profits = []
+    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
+        profit = 0
+        for per_ind in range(0,len(permut_index)):
+            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
+            profit += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
+        profits.append(profit)
+    label = 'KeyRevPoints'
+    keypoints = df[label]
+    revs = []
+    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
+        rev = 0
+        for per_ind in range(0,len(permut_index)):
+            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
+            rev += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
+        revs.append(rev)
+    fig = plt.figure()
+    plt.plot(revs,profits, 'g.')
+
+    max_rev_rev = df['MaxRevPPFPointRevenue'].sum()
+    max_rev_prof = df['MaxRevPPFPointProfit'].sum()
+    max_prof_rev = df['MaxProfitPPFPointRevenue'].sum()
+    max_prof_prof = df['MaxProfitPPFPointProfit'].sum()
+    plt.plot(max_rev_rev, max_rev_prof, 'r.', label='Maximize Revenue')
+    plt.plot(max_prof_rev, max_prof_prof, 'y.', label='Maximize Profit')
+    plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Price Point')
+    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'k.', label='Current Price Point')
+    plt.xlabel('Revenue')
+    plt.ylabel('Profit')
+    plt.legend()
+    return fig
+
+def cluster_fake_ppf(df, columns=['Cost'], n_clusters = 5):
+    kmeans = KMeans(n_clusters = n_clusters, random_state = 20)
+    X = np.array(df[columns])
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+    kmeans.fit(X)
+    df['cluster_centers'] = kmeans.labels_
+    fig = plot_ppf(df)
+    fig.show()
