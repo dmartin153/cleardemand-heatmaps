@@ -129,7 +129,9 @@ def build_ppf(df):
             pot_profs.append(prof)
         max_rev_ind = np.argmax(pot_revs)
         max_prof_ind = np.argmax(pot_profs)
-        inds = np.array([np.argmax(pot_revs), np.argmax(pot_profs)])
+        pot_revs = np.array(pot_revs)
+        pot_profs = np.array(pot_profs)
+        inds = np.array([np.argmax(pot_revs), np.argmax(pot_profs), np.argmax(pot_revs + pot_profs), np.argmax(pot_profs*3 + pot_revs)])
         prof_points.append(np.array(pot_profs)[inds])
         rev_points.append(np.array(pot_revs)[inds])
     df['KeyProfitPoints'] = prof_points
@@ -158,12 +160,12 @@ def plot_ppf(df):
             rev += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
         revs.append(rev)
     fig = plt.figure()
-    plt.plot(revs,profits, 'g.')
+    plt.plot(revs,profits, 'g.', alpha=0.5)
 
-    max_rev_rev = df['MaxRevPPFPointRevenue'].sum()
-    max_rev_prof = df['MaxRevPPFPointProfit'].sum()
-    max_prof_rev = df['MaxProfitPPFPointRevenue'].sum()
-    max_prof_prof = df['MaxProfitPPFPointProfit'].sum()
+    max_rev_rev = df['KeyRevPoints'].apply(lambda x: x[0]).sum()
+    max_prof_rev = df['KeyRevPoints'].apply(lambda x: x[1]).sum()
+    max_rev_prof = df['KeyProfitPoints'].apply(lambda x: x[0]).sum()
+    max_prof_prof = df['KeyProfitPoints'].apply(lambda x: x[1]).sum()
     plt.plot(max_rev_rev, max_rev_prof, 'r.', label='Maximize Revenue')
     plt.plot(max_prof_rev, max_prof_prof, 'y.', label='Maximize Profit')
     plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Price Point')
@@ -173,12 +175,12 @@ def plot_ppf(df):
     plt.legend()
     return fig
 
-def cluster_fake_ppf(df, columns=['Cost'], n_clusters = 5):
+def cluster_fake_ppf(df, columns=['CurRev'], n_clusters = 4):
     kmeans = KMeans(n_clusters = n_clusters, random_state = 20)
     X = np.array(df[columns])
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
     kmeans.fit(X)
-    df['cluster_centers'] = kmeans.labels_
+    df['cluster_labels'] = kmeans.labels_
     fig = plot_ppf(df)
     fig.show()
