@@ -1,6 +1,7 @@
 '''This module contains functions used for data processing'''
 import pandas as pd
 import pdb
+import numpy as np
 import confidential
 
 def small_load(fileloc):
@@ -50,7 +51,18 @@ def main(fileloc=None):
         fileloc='PriceBook.csv'
     df = pd.read_csv(fileloc)
     convert_dol_to_num(df)
+    drop_rows(df)
     return df
+
+def drop_rows(df):
+    '''this function drops products which are not offered in all areas'''
+    drop_prods = []
+    prods = df['ProductId'].unique()
+    for prod in prods:
+        if sum(df['ProductId']==prod) < max(df['ProductId'].value_counts()):
+            drop_prods.append(prod)
+    for drop_prod in drop_prods:
+        df.drop(df[df['ProductId'] == drop_prod].index, inplace=True)
 
 def build_num_prices(df):
     '''this function adds columns of "NumIdenticalPrices" and "NumTotalProducts."
@@ -88,3 +100,7 @@ def build_success_metrics(df):
     df['RecStrategy'] = df['RecProfit'] / df['RecRev']
     df['RegretRev'] = df['CurRev'] - df['RecRev']
     df['RegretProfit'] = df['CurProfit'] - df['RecProfit']
+
+def add_q(df):
+    '''This function adds Q to the dataframe, requires CurPrice, FcstBeta, and CurRev'''
+    df['Q'] = df['CurRev'] / (df['CurPrice'] * np.exp(-df['CurPrice'] * df['FcstBeta']))
