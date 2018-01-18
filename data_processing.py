@@ -167,8 +167,9 @@ def find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
         revenues.append(pot_revs[strat_ind])
     return np.array(profits), np.array(revenues)
 
-def add_key_points(df,strategies=4):
-    '''This function builds the production possibility frontier for the given data frame'''
+def add_key_points(df,strategies=10):
+    '''This function builds the key profit and revenue points for different strategies
+    for a dataframe. Used to plot the production possibility frontier of the dataset.'''
     price_variations_to_try = np.arange(-1., 1.01, 0.01)
     prof_points = []
     rev_points = []

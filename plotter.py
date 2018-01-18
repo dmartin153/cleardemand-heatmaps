@@ -110,38 +110,37 @@ def check_dir(location):
     if not os.path.exists(location):
         os.makedirs(location)
 
+def find_labeled_points(label,df):
+    '''This function makes a list of potential revenues or profits using the
+    clustering done in 'cluster_labels' and values in the label passed in'''
+    row_index = df.index
+    clusters = df['cluster_labels'].unique()
+    keypoints = df[label]
+    outputs = []
+    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
+        val = 0
+        for per_ind in range(0,len(permut_index)):
+            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
+            val += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
+        outputs.append(val)
+    return outputs
+
 def plot_ppf(df):
     '''this function plots a basic production possibility frontier'''
-    row_index = df.index
-    label = 'KeyProfitPoints'
-    keypoints = df[label]
-    clusters = df['cluster_labels'].unique()
-    profits = []
-    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
-        profit = 0
-        for per_ind in range(0,len(permut_index)):
-            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
-            profit += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
-        profits.append(profit)
-    label = 'KeyRevPoints'
-    keypoints = df[label]
-    revs = []
-    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
-        rev = 0
-        for per_ind in range(0,len(permut_index)):
-            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
-            rev += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
-        revs.append(rev)
+    sns.set()
+    profits = find_labeled_points('KeyProfitPoints',df)
+    revs = find_labeled_points('KeyRevPoints',df)
     fig = plt.figure()
-    plt.plot(revs,profits, 'g.', alpha=0.5)
+    plt.plot(revs,profits, 'g.', alpha=0.5, label='Strategy Variants')
+    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'r.', label='Current Prices')
     plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Prices')
-    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'k.', label='Current Prices')
     plt.xlabel('Total Revenue')
     plt.ylabel('Total Profit')
     plt.legend()
+    plt.tight_layout()
     return fig
 
-def cluster_fake_ppf(df, columns=['CurRev'], n_clusters = 4):
+def cluster_fake_ppf(df, columns=['CurRev'], n_clusters = 2):
     kmeans = KMeans(n_clusters = n_clusters, random_state = 20)
     X = np.array(df[columns])
     scaler = StandardScaler()
