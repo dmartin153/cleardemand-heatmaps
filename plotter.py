@@ -110,33 +110,6 @@ def check_dir(location):
     if not os.path.exists(location):
         os.makedirs(location)
 
-def build_ppf(df):
-    '''This function builds the production possibility frontier for the given data frame'''
-    price_variations_to_try = np.arange(-1., 1.01, 0.01)
-    prof_points = []
-    rev_points = []
-    for index, row in df.iterrows():
-        beta = row['FcstBeta']
-        q = row['Q']
-        cost = row['Cost']
-        pot_revs = []
-        pot_profs = []
-        for price_variation in price_variations_to_try:
-            price = row['CurPrice'] + price_variation
-            rev = evaluation.calculate_revenue(price, beta, q)
-            prof = evaluation.calculate_profit(price,beta, q, cost)
-            pot_revs.append(rev)
-            pot_profs.append(prof)
-        max_rev_ind = np.argmax(pot_revs)
-        max_prof_ind = np.argmax(pot_profs)
-        pot_revs = np.array(pot_revs)
-        pot_profs = np.array(pot_profs)
-        inds = np.array([np.argmax(pot_revs), np.argmax(pot_profs), np.argmax(pot_revs + pot_profs), np.argmax(pot_profs*3 + pot_revs)])
-        prof_points.append(np.array(pot_profs)[inds])
-        rev_points.append(np.array(pot_revs)[inds])
-    df['KeyProfitPoints'] = prof_points
-    df['KeyRevPoints'] = rev_points
-
 def plot_ppf(df):
     '''this function plots a basic production possibility frontier'''
     row_index = df.index
@@ -161,17 +134,10 @@ def plot_ppf(df):
         revs.append(rev)
     fig = plt.figure()
     plt.plot(revs,profits, 'g.', alpha=0.5)
-
-    max_rev_rev = df['KeyRevPoints'].apply(lambda x: x[0]).sum()
-    max_prof_rev = df['KeyRevPoints'].apply(lambda x: x[1]).sum()
-    max_rev_prof = df['KeyProfitPoints'].apply(lambda x: x[0]).sum()
-    max_prof_prof = df['KeyProfitPoints'].apply(lambda x: x[1]).sum()
-    plt.plot(max_rev_rev, max_rev_prof, 'r.', label='Maximize Revenue')
-    plt.plot(max_prof_rev, max_prof_prof, 'y.', label='Maximize Profit')
-    plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Price Point')
-    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'k.', label='Current Price Point')
-    plt.xlabel('Revenue')
-    plt.ylabel('Profit')
+    plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Prices')
+    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'k.', label='Current Prices')
+    plt.xlabel('Total Revenue')
+    plt.ylabel('Total Profit')
     plt.legend()
     return fig
 
