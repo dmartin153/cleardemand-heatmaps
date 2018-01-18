@@ -16,7 +16,7 @@ from bokeh.palettes import RdYlGn10 as pal
 class HeatMap(object):
     '''This class contains information used in the heatmap'''
 
-    def __init__(self, heatgrid=None, pal='RdYlGn10', p=None):
+    def __init__(self, heatgrid=None, pal='Viridis256', p=None):
         '''This initializes the class'''
         self.heatgrid = heatgrid
         self.pal = pal
