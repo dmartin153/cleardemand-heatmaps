@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
 
-def kmeans_cluster(df,cols=['Cost'],n_clusters=3):
+def kmeans_cluster(df,cols=['RecPrice'],n_clusters=3):
     '''This function builds and returns a basic Kmeans cluster for the provided
     dataframe and columns.
     Inputs:
