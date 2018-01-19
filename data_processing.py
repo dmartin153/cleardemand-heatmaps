@@ -56,6 +56,8 @@ def main(fileloc=None):
     drop_rows(df)
     if not 'Q' in df.columns:
         add_q(df)
+    add_price_variation(df)
+    # modeling.add_iso_sug_price(df)
     return df
 
 def drop_rows(df):

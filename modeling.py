@@ -5,6 +5,7 @@ import pdb
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
 
 def feature_cleaning(df,cols,target):
     '''This function is used to divide the provided data into an X feature matrix
@@ -50,3 +51,50 @@ def build_new_suggested_prices(df,outliers):
 def add_iso_sug_price(df):
     outliers = iso_forest_predict_outliers(df)
     build_new_suggested_prices(df,outliers)
+
+def isoforestpred(df,fit_option, training_option):
+    n_df = df.copy()
+    n_df = df.sort_values(by='CurRev')
+    if training_option == 'std':
+        features = 'CurPriceStdVariation'
+    elif training_option == 'var':
+        features = 'CurPriceVariation'
+    elif training_option == 'stdvar':
+        features = ['CurPriceStdVariation','CurPriceVariation']
+    if fit_option == 'toprev': #If selecting only top 256 values
+        sample_limit = 256
+    else:
+        sample_limit = len(n_df)
+    X = n_df.loc[:sample_limit,features].values
+    full_data = df[features].values
+    if training_option != 'stdvar':
+        X = X.reshape(-1,1)
+        full_data = full_data.reshape(-1,1)
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+    iso_for = IsolationForest()
+    iso_for.fit(X)
+    preds = iso_for.predict(full_data)
+    return preds
+
+def build_isoforest_preds(df):
+    '''This function adds isolation forest predictions for the given data set. Specifically,
+    it builds seven models, they are divided as follows:
+    The following are trained off the entire dataset:
+    IsoForestPredict_std -- prediction made from an isolation forest on the standard deviations
+    IsoForestPredict_var -- prediction made from an isolation forest on the absolute variation
+    IsoForestPredict_stdvar -- prediction made from an isolation forest on the standard deviation and absolute variations
+    The Following are trained off only the top 256 revenue items:
+    IsoForestPredict_std_toprev -- prediction made from an isolation forest on the standard deviation
+    IsoForestPredict_var_toprev -- prediction made from an isolation forest on the absolute variation
+    IsoForestPredict_stdvar_toprev -- prediction made from an isolation forest on the standard deviation and absolute variation
+
+    IsoForestPredict_ensemble -- voting ensemble of the above six models'''
+    fit_options = ['all', 'toprev']
+    training_options = ['std', 'var', 'stdvar']
+    df['IsoForestPredict_ensemble'] = 0
+    for fit_option in fit_options:
+        for training_option in training_options:
+            preds = isoforestpred(df,fit_option,training_option)
+            df['IsoForestPredict_'+fit_option+'_'+training_option] = preds
+            df['IsoForestPredict_ensemble'] += preds
