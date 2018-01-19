@@ -10,6 +10,7 @@ import evaluation
 import itertools
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+import data_processing
 
 
 def build_basic_heatmap(df, index, column, value):
@@ -125,7 +126,7 @@ def find_labeled_points(label,df):
         outputs.append(val)
     return outputs
 
-def plot_ppf(df):
+def plot_ppf(df,title=None):
     '''this function plots a basic production possibility frontier'''
     sns.set()
     profits = find_labeled_points('KeyProfitPoints',df)
@@ -137,15 +138,27 @@ def plot_ppf(df):
     plt.xlabel('Total Revenue')
     plt.ylabel('Total Profit')
     plt.legend()
+    if title:
+        plt.title(title)
     plt.tight_layout()
     return fig
 
-def cluster_fake_ppf(df, columns=['CurRev'], n_clusters = 2):
+def cluster_fake_ppf(df, columns=['CurRev'], n_clusters = 2, title=None):
     kmeans = KMeans(n_clusters = n_clusters, random_state = 20)
     X = np.array(df[columns])
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
     kmeans.fit(X)
     df['cluster_labels'] = kmeans.labels_
-    fig = plot_ppf(df)
-    fig.show()
+    fig = plot_ppf(df, title)
+    return fig
+
+def make_and_save_ppf(df,name,cluster_cols=['CurRev'],n_clusters=3,n_strats=8):
+    saveloc = 'figures/PPFs/'
+    check_dir(saveloc)
+    plot_name = name+'_{}strats_{}clusters_of_{}'.format(n_strats,n_clusters,'_'.join(cluster_cols))
+    n_df = df.copy()
+    data_processing.add_key_points(n_df,strategies=n_strats)
+    fig = cluster_fake_ppf(n_df, columns=cluster_cols, n_clusters=n_clusters, title=plot_name)
+    fig.savefig(saveloc+plot_name+'.jpg')
+    plt.close(fig)

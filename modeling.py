@@ -72,8 +72,9 @@ def isoforestpred(df,fit_option, training_option):
         full_data = full_data.reshape(-1,1)
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
-    iso_for = IsolationForest()
+    iso_for = IsolationForest(contamination = 0.01, random_state=42,max_samples=sample_limit)
     iso_for.fit(X)
+    full_data = scaler.fit_transform(full_data)
     preds = iso_for.predict(full_data)
     return preds
 

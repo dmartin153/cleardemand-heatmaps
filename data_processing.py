@@ -111,7 +111,8 @@ def add_q(df):
     '''This function adds Q to the dataframe, requires CurPrice, FcstBeta, and CurRev'''
     df['Q'] = df['CurRev'] / (df['CurPrice'] * np.exp(-df['CurPrice'] * df['FcstBeta']))
 
-def pot_revenue_profit(df,density=201,max_change=1):
+def find_price_variants(price,density=201,max_change_percent=0.15):
+    max_change = price*max_change_percent
     price_variations_to_try = np.linspace(-max_change,max_change,density)
     return price_variations_to_try
 
@@ -173,10 +174,10 @@ def find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
 def add_key_points(df,strategies=10):
     '''This function builds the key profit and revenue points for different strategies
     for a dataframe. Used to plot the production possibility frontier of the dataset.'''
-    price_variations_to_try = np.arange(-1., 1.01, 0.01)
     prof_points = []
     rev_points = []
     for index, row in df.iterrows():
+        price_variations_to_try = find_price_variants(row['CurPrice'])
         pot_revs, pot_profs = calc_pot_rev_profs(row['CurPrice'], price_variations_to_try, row['FcstBeta'], row['Q'], row['Cost'])
         profit_weights, revenue_weights = calc_strat_weights(strategies)
         strat_profits, strat_revs = find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
