@@ -4,6 +4,7 @@ import pdb
 import numpy as np
 import confidential
 import evaluation
+import modeling
 
 def small_load(fileloc):
     '''this function takes a file location as input and outputs a dataframe with
@@ -181,3 +182,17 @@ def add_key_points(df,strategies=10):
         rev_points.append(strat_revs)
     df['KeyProfitPoints'] = prof_points
     df['KeyRevPoints'] = rev_points
+
+def add_price_variation(df):
+    '''this function adds a column "CurPriceVariation" which is the variation of
+    the CurPrice from the average CurPrice for that product'''
+    avgs = dict()
+    stds = dict()
+    xs = df['ProductId'].unique()
+    for x in xs:
+        avgs[x] = df[df['ProductId'] == x]['CurPrice'].mean()
+        stds[x] = df[df['ProductId'] == x]['CurPrice'].std()
+    raw_variation = df['CurPrice'].values - np.array([avgs[key] for key in df['ProductId'].values])
+    standardized_variation = raw_variation / np.array([stds[key] for key in df['ProductId'].values])
+    df['CurPriceVariation'] = raw_variation
+    df['CurPriceStdVariation'] = standardized_variation
