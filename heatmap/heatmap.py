@@ -82,13 +82,14 @@ class HeatMap(object):
 class HeatGrid(object):
     '''This class is used to populat the grid of the heatmap'''
 
-    def __init__(self, df=None, target='CurPrice', sortby='CurRev', normalization=1,
+    def __init__(self, df=None, target='CurPrice', sortby_x='CurRev',sortby_y='CurPrice', normalization=1,
                 x_axis='ProductId', y_axis='AreaId', selection_criteria={'SalesTypeId':1},
                 x_display='ProductDescription', y_display='AreaId'):
         '''Initialize the class '''
         self.df = df
         self.target = target
-        self.sortby = sortby
+        self.sortby_x = sortby_x
+        self.sortby_y = sortby_y
         self.normalization = normalization
         self.x_axis = x_axis
         self.y_axis = y_axis
@@ -140,8 +141,8 @@ class HeatGrid(object):
         raw_xs = self.df[self.x_axis].unique()
         raw_ys = self.df[self.y_axis].unique()
 
-        total_x_targets = [self.df[self.df[self.x_axis] == raw_x][self.sortby].sum() for raw_x in raw_xs]
-        total_y_targets = [self.df[self.df[self.y_axis] == raw_y][self.sortby].sum() for raw_y in raw_ys]
+        total_x_targets = [self.df[self.df[self.x_axis] == raw_x][self.sortby_x].sum() for raw_x in raw_xs]
+        total_y_targets = [self.df[self.df[self.y_axis] == raw_y][self.sortby_y].sum() for raw_y in raw_ys]
 
         sorted_x_inds = np.argsort(total_x_targets)
         sorted_y_inds = np.argsort(total_y_targets)

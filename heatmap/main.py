@@ -38,7 +38,8 @@ def update():
     '''This function updates the figure based on user inputs to the controls'''
     #Update the heatmap grid data
     app.heatgrid = heatmap.HeatGrid(x_axis=x_axis.value, y_axis=y_axis.value,
-        sortby = sorted_by.value, target = target.value, normalization=normalization.active)
+        sortby_x = sorted_by_x.value, sortby_y = sorted_by_y.value, target = target.value,
+        normalization=normalization.active)
     #Use the new heatgrid parameter to update the heatmap
     app.update()
 
@@ -46,7 +47,8 @@ def update():
 ###Build the controls
 
 #Column to sort the data by
-sorted_by = Select(title="Sort By", options=cols, value='CurRev')
+sorted_by_x = Select(title="Sort X By", options=cols, value='CurRev')
+sorted_by_y = Select(title="Sort Y By", options=cols, value='CurPrice')
 #Column to use as a target for plotting
 target = Select(title='Target', options=cols, value='CurPrice')
 #Colun to use to set x axis
@@ -58,7 +60,7 @@ normalization = RadioGroup(labels=['No Normalization', 'Difference from column a
 normalization.on_change('active', lambda attr, old, new: update())
 
 #Set how controls impact changes
-controls = [sorted_by, target, x_axis, y_axis]
+controls = [sorted_by_x, sorted_by_y, target, x_axis, y_axis]
 for control in controls:
     control.on_change('value', lambda attr, old, new: update())
 
