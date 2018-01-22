@@ -162,3 +162,104 @@ def make_and_save_ppf(df,name,cluster_cols=['CurRev'],n_clusters=3,n_strats=8):
     fig = cluster_fake_ppf(n_df, columns=cluster_cols, n_clusters=n_clusters, title=plot_name)
     fig.savefig(saveloc+plot_name+'.jpg')
     plt.close(fig)
+
+def dollar_v_price(df,index):
+    '''This function makes a plot of dollars vs price for the provided index into the
+    data frame'''
+    current_price = df['CurPrice'][index]
+    beta = df['FcstBeta'][index]
+    q = df['Q'][index]
+    cost = df['Cost'][index]
+    price_variants = data_processing.find_price_variants(current_price,max_change_percent=1.)
+    prices = price_variants+current_price
+    revenue = evaluation.calculate_revenue(prices,beta,q)
+    profit = evaluation.calculate_profit(prices,beta,q,cost)
+    sns.set()
+    fig = plt.figure()
+    plt.plot(prices,revenue,'r',label='Revenue')
+    plt.plot(prices,profit,'b',label='Profit')
+    plt.xlabel('Price ($)')
+    plt.ylabel('Return ($)')
+    plt.title('Revenue & Profit for varying prices')
+    plt.legend()
+    plt.tight_layout()
+    return fig
+
+def single_product_rev_v_profit(df,index):
+    '''This function makes a plot of revenue vs profit for the provided index for a variety of
+    prices'''
+    current_price = df['CurPrice'][index]
+    beta = df['FcstBeta'][index]
+    q = df['Q'][index]
+    cost = df['Cost'][index]
+    price_variants = data_processing.find_price_variants(current_price,max_change_percent=1.)
+    prices = price_variants+current_price
+    revenue = evaluation.calculate_revenue(prices,beta,q)
+    profit = evaluation.calculate_profit(prices,beta,q,cost)
+    sns.set()
+    fig = plt.figure()
+    plt.plot(revenue,profit,'r',label='Price Frontier')
+    plt.xlabel('Revenue ($)')
+    plt.ylabel('Profit ($)')
+    plt.title('Revenue Profit Curve')
+    plt.legend()
+    plt.tight_layout()
+    return fig
+
+def efficient_frontier_plot(df):
+    '''This function makes a plot of maximum revenue vs profit for the provided dataframe'''
+    strategies = np.linspace(0,1,101)
+    betas = df['FcstBeta']
+    qs = df['Q']
+    costs = df['Cost']
+    rev = []
+    prof = []
+    for strategy in strategies:
+        prices = strategy*costs + 1/betas
+        revenue = evaluation.calculate_revenue(prices,betas,qs).sum()
+        profit = evaluation.calculate_profit(prices,betas,qs,costs).sum()
+        rev.append(revenue)
+        prof.append(profit)
+    sns.set()
+    fig = plt.figure()
+    plt.plot(rev,prof,'r',label='Efficient Frontier')
+    plt.plot(df['CurRev'].sum(),df['CurProfit'].sum(),'k.',label='Current Position')
+    plt.xlabel('Revenue ($)')
+    plt.ylabel('Profit ($)')
+    plt.title('Profit Vs Revenue')
+    plt.legend()
+    plt.tight_layout()
+    return fig
+
+def calculate_q(q0,beta,cur_price,new_price):
+    '''This function calculates q at a new price'''
+    Q = q0 * np.exp(-beta*(new_price-cur_price))
+    return Q
+
+def plot_q(df,index):
+    '''This function plots Q vs price for a variety of prices for the dataframe's indexed row'''
+    current_price = df['CurPrice'][index]
+    beta = df['FcstBeta'][index]
+    q = df['Q'][index]
+    cost = df['Cost'][index]
+    price_variants = data_processing.find_price_variants(current_price,max_change_percent=1.)
+    prices = price_variants+current_price
+    sns.set()
+    fig = plt.figure()
+    Qs=calculate_q(q,beta,current_price,prices)
+    beta_max = 1/df['AlphaMin'][index]
+    beta_min = 1/df['AlphaMax'][index]
+    beta_sigma = (beta_max - beta_min) / 2
+    perc_beta_sigma = beta_sigma/beta
+    perc_sigma = perc_beta_sigma*beta*(prices-current_price)
+    qupper = Qs + (Qs*np.exp(perc_sigma) - Qs)
+    qlower = Qs - (Qs*np.exp(perc_sigma) - Qs)
+    plt.plot(prices,Qs,'k',label='Q')
+    plt.plot(prices,qupper,'k--',label='Q Bounds')
+    plt.plot(prices,qlower,'k--')
+    plt.xlabel('Price ($)')
+    plt.ylabel('Q ($)')
+    plt.title('Q vs price')
+    plt.legend()
+    plt.tight_layout()
+    return fig
