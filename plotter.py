@@ -10,7 +10,7 @@ import evaluation
 import itertools
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-import data_processing
+import data_processing, modeling
 
 
 def build_basic_heatmap(df, index, column, value):
@@ -199,6 +199,7 @@ def single_product_rev_v_profit(df,index):
     sns.set()
     fig = plt.figure()
     plt.plot(revenue,profit,'r',label='Price Frontier')
+    plt.plot(df.loc[index,'CurRev'],df.loc[index,'CurProfit'],'ob',label='Current Price Point')
     plt.xlabel('Revenue ($)')
     plt.ylabel('Profit ($)')
     plt.title('Revenue Profit Curve')
@@ -206,20 +207,23 @@ def single_product_rev_v_profit(df,index):
     plt.tight_layout()
     return fig
 
+def find_closest_strat(df,indexes=None):
+    '''This function finds the best prices for all the indexes provided, with the
+    objective of maximizing the distance the profit revenue graph goes away from
+    the origin. Defaults to all indexes'''
+    if indexes is None:
+        indexes = df.index
+    n_df = df.loc[indexes,:].copy()
+    theta = modeling.estimate_cur_strat(df)
+    rev, prof, all_prices = modeling.build_efficient_frontier(n_df)
+    pot_thetas = np.arctan(np.array(prof) / np.array(rev))
+    ind = np.argmin(abs(theta - pot_thetas))
+    prices = all_prices[ind]
+    return prices
+
 def efficient_frontier_plot(df):
     '''This function makes a plot of maximum revenue vs profit for the provided dataframe'''
-    strategies = np.linspace(0,1,101)
-    betas = df['FcstBeta']
-    qs = df['Q']
-    costs = df['Cost']
-    rev = []
-    prof = []
-    for strategy in strategies:
-        prices = strategy*costs + 1/betas
-        revenue = evaluation.calculate_revenue(prices,betas,qs).sum()
-        profit = evaluation.calculate_profit(prices,betas,qs,costs).sum()
-        rev.append(revenue)
-        prof.append(profit)
+    rev, prof, _= modeling.build_efficient_frontier(df)
     sns.set()
     fig = plt.figure()
     plt.plot(rev,prof,'r',label='Efficient Frontier')
@@ -258,8 +262,8 @@ def plot_q(df,index):
     plt.plot(prices,qupper,'k--',label='Q Bounds')
     plt.plot(prices,qlower,'k--')
     plt.xlabel('Price ($)')
-    plt.ylabel('Q ($)')
-    plt.title('Q vs price')
+    plt.ylabel('Quantity (#)')
+    plt.title('Quantity vs price')
     plt.legend()
     plt.tight_layout()
     return fig
