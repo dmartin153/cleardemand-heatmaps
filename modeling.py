@@ -6,6 +6,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+import evaluation
 
 def feature_cleaning(df,cols,target):
     '''This function is used to divide the provided data into an X feature matrix
@@ -40,9 +41,34 @@ def iso_forest_predict_outliers(df):
         outliers.append(outlier_inds)
     return outliers
 
-def build_new_suggested_prices(df,outliers):
+def estimate_cur_strat(df):
+    '''This function returns the given strategy, where the strategy is defined as
+    the angle which forms a line out to the profit and revenue position a graph
+    of profit vs revenue.'''
+    strat_angle = np.arctan(df['CurProfit'].sum()/df['CurRev'].sum())
+    return strat_angle
+
+def build_efficient_frontier(df):
+    '''This function returns the revenue and profit of different strategies of the efficient frontier'''
+    strategies = np.linspace(0,1,101)
+    betas = df['FcstBeta']
+    qs = df['Q']
+    costs = df['Cost']
+    rev = []
+    prof = []
+    all_prices = []
+    for strategy in strategies:
+        prices = strategy*costs + 1/betas
+        revenue = evaluation.calculate_revenue(prices,betas,qs).sum()
+        profit = evaluation.calculate_profit(prices,betas,qs,costs).sum()
+        rev.append(revenue)
+        prof.append(profit)
+        all_prices.append(prices)
+    return rev, prof, all_prices
+
+def build_new_suggested_prices(df):
     '''This function creates a new column of IsoSugPrice, which is based off the isolation
-    forest'''
+    forest ensemble column'''
     dct = {}
     df['IsoSugPrice'] = df['CurPrice'] #Initialize as current price
     for outlier in outliers:
@@ -65,7 +91,7 @@ def isoforestpred(df,fit_option, training_option):
         sample_limit = 256
     else:
         sample_limit = len(n_df)
-    X = n_df.loc[:sample_limit,features].values
+    X = n_df.loc[:n_df.index[sample_limit-1],features].values
     full_data = df[features].values
     if training_option != 'stdvar':
         X = X.reshape(-1,1)
