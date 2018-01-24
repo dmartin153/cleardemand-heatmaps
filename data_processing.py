@@ -198,4 +198,4 @@ def add_price_variation(df):
     raw_variation = df['CurPrice'].values - np.array([avgs[key] for key in df['ProductId'].values])
     standardized_variation = raw_variation / np.array([stds[key] for key in df['ProductId'].values])
     df['CurPriceVariation'] = raw_variation
-    df['CurPriceStdVariation'] = standardized_variation
+    df['CurPriceStdVariation'] = np.nan_to_num(standardized_variation)
