@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import evaluation
+import plotter
 
 def feature_cleaning(df,cols,target):
     '''This function is used to divide the provided data into an X feature matrix
@@ -125,3 +126,9 @@ def build_isoforest_preds(df):
             preds = isoforestpred(df,fit_option,training_option)
             df['IsoForestPredict_'+fit_option+'_'+training_option] = preds
             df['IsoForestPredict_ensemble'] += preds
+    df['IsoForestPrice'] = df['CurPrice']
+    inds = df['IsoForestPredict_ensemble']<max(df['IsoForestPredict_ensemble'])
+    prices = plotter.find_closest_strat(df,indexes=inds)
+    df.loc[inds, 'IsoForestPreice'] = prices.values
+    all_prices = plotter.find_closest_strat(df)
+    df['FullAutoPricing'] = all_prices
