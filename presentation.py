@@ -8,14 +8,32 @@ import heatmap
 from bokeh.io import export_png
 import numpy as np
 import matplotlib.pyplot as plt
+import pdb
 
-saveloc='figures/Presentation/'
+saveloc='figures/AltPresentation/'
 
-def build_data_frame():
+def main():
+    '''This function runs all the graphs, building new figures'''
+    df = build_data_frame()
+    make_revenue_heatmap(df)
+    make_price_heatmap(df)
+    make_price_varstd_heatmap(df)
+    make_isoforest_heatmap(df)
+    make_q_and_errors(df)
+    make_product_prof_rev(df)
+    make_product_frontier(df)
+    make_current_frontier(df)
+    make_isoforest_frontier(df)
+    make_full_frontier(df)
+    make_isoforest_price_heatmap(df)
+    make_isoforest_price_var_heatmap(df)
+    make_full_auto_price_var_heatmap(df)
+
+def build_data_frame(fileloc=None):
     '''This function builds the dataframe used for all the subsequent modeling'''
-    fileloc = confidential.presentation_data_file()
+    if fileloc is None:
+        fileloc = confidential.presentation_data_file()
     df = data_processing.main(fileloc)
-    data_processing.add_price_variation(df)
     modeling.build_isoforest_preds(df)
     return df
 
@@ -52,7 +70,7 @@ def make_q_and_errors(df):
     ind = np.argmax(df['CurRev'])
     fig = plotter.plot_q(df,ind)
     fig.savefig(saveloc+'Q_v_price.png')
-    fig.close()
+    plt.close(fig)
 
 def make_product_prof_rev(df):
     '''This function plots the Revenue and Profit vs price for the highest revenue
@@ -60,20 +78,20 @@ def make_product_prof_rev(df):
     ind = np.argmax(df['CurRev'])
     fig = plotter.dollar_v_price(df,ind)
     fig.savefig(saveloc+'Rev_prof_v_price.png')
-    fig.close()
+    plt.close(fig)
 
 def make_product_frontier(df):
     '''this function plots the efficient frontier for a single product'''
     ind = np.argmax(df['CurRev'])
     fig = plotter.single_product_rev_v_profit(df,ind)
     fig.savefig(saveloc+'prof_v_rev.png')
-    fig.close()
+    plt.close(fig)
 
 def make_current_frontier(df):
     '''This function plots the efficient frontier for an entier dataframe'''
     fig = plotter.efficient_frontier_plot(df)
     fig.savefig(saveloc+'efficient_frontier.png')
-    fig.close()
+    plt.close(fig)
 
 def make_isoforest_frontier(df):
     '''This function plots the efficient frontier for the detected outliers'''
@@ -87,15 +105,28 @@ def make_isoforest_frontier(df):
     fig.savefig(saveloc+'identified_points_efficient_frontier.png')
     plt.close(fig)
 
-def make_full_frontier(df):
+def make_full_frontier(df,bounds=0):
     '''this function plots the efficient frontier, including all recommended prices'''
     fig = plotter.efficient_frontier_plot(df)
     rev = evaluation.calculate_revenue(df['FullAutoPricing'],df['FcstBeta'],df['Q'])
     prof = evaluation.calculate_profit(df['FullAutoPricing'],df['FcstBeta'],df['Q'],df['Cost'])
+    if bounds==1:
+        beta_max = 1. / df['AlphaMin']
+        q_max = df['CurQty'] / np.exp(-beta_max * df['CurPrice'])
+        beta_min = 1. / df['AlphaMax']
+        q_min = df['CurQty'] / np.exp(-beta_min * df['CurPrice'])
+        max_rev = evaluation.calculate_revenue(df['FullAutoPricing'],beta_max,q_max)
+        max_prof = evaluation.calculate_profit(df['FullAutoPricing'],beta_max,q_max,df['Cost'])
+        min_rev = evaluation.calculate_revenue(df['FullAutoPricing'],beta_min,q_min)
+        min_prof = evaluation.calculate_profit(df['FullAutoPricing'],beta_min,q_min,df['Cost'])
+        plt.plot(min_rev.sum(),min_prof.sum(),'k.',label='Minimum Revenue Error')
+        plt.plot(max_rev.sum(),max_prof.sum(),'k.',label='Maximum Revenue Error')
     plt.plot(rev.sum(),prof.sum(),'bo',label='Recommended Pricing')
+    pdb.set_trace()
     plt.legend()
-    fig.savefig(saveloc+'full_efficient_frontier.png')
-    plt.close(fig)
+    return fig
+    # fig.savefig(saveloc+'full_efficient_frontier.png')
+    # plt.close(fig)
 
 def make_isoforest_price_heatmap(df):
     '''This function builds the image for the heatmap isolation forest'''
