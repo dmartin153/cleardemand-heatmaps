@@ -185,7 +185,7 @@ def dollar_v_price(df,index):
     plt.tight_layout()
     return fig
 
-def single_product_rev_v_profit(df,index):
+def single_product_rev_v_profit(df,index,bounds=0):
     '''This function makes a plot of revenue vs profit for the provided index for a variety of
     prices'''
     current_price = df['CurPrice'][index]
@@ -194,11 +194,23 @@ def single_product_rev_v_profit(df,index):
     cost = df['Cost'][index]
     price_variants = data_processing.find_price_variants(current_price,max_change_percent=1.)
     prices = price_variants+current_price
+    if bounds==1:
+        beta_max = 1. / df['AlphaMin'][index]
+        q_max = df['CurQty'][index] / np.exp(-beta_max * df['CurPrice'][index])
+        beta_min = 1. / df['AlphaMax'][index]
+        q_min = df['CurQty'][index] / np.exp(-beta_min * df['CurPrice'][index])
+        max_beta_rev = evaluation.calculate_revenue(prices,beta_max,q_max)
+        min_beta_rev = evaluation.calculate_revenue(prices,beta_min,q_min)
+        max_beta_prof = evaluation.calculate_profit(prices,beta_max,q_max,cost)
+        min_beta_prof = evaluation.calculate_profit(prices,beta_min,q_min,cost)
     revenue = evaluation.calculate_revenue(prices,beta,q)
     profit = evaluation.calculate_profit(prices,beta,q,cost)
     sns.set()
     fig = plt.figure()
     plt.plot(revenue,profit,'r',label='Price Frontier')
+    if bounds==1:
+        plt.plot(max_beta_rev,max_beta_prof,'r--',label='Price Frontier Error Bounds')
+        plt.plot(min_beta_rev,min_beta_prof,'r--')
     plt.plot(df.loc[index,'CurRev'],df.loc[index,'CurProfit'],'ob',label='Current Price Point')
     plt.xlabel('Revenue ($)')
     plt.ylabel('Profit ($)')
