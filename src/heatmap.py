@@ -19,30 +19,33 @@ class HeatMap(object):
         self.heatgrid = heatgrid
         self.pal = pal
         self.title = title
+        self.p = generate_figure
 
+    @property
     def generate_figure(self):
         '''This instantiates a figure object'''
         tools = "pan,wheel_zoom,reset,hover,save"
-        self.p = figure(
+        p = figure(
             title=self.title, tools=tools,
             x_axis_location='above',
             toolbar_location='below'
         )
-        self.p.grid.grid_line_color = None
-        self.p.axis.axis_line_color = None
-        self.p.axis.major_tick_line_color = None
-        self.p.axis.major_label_text_font_size = '12pt'
-        self.p.axis.major_label_standoff = 0
-        self.p.xaxis.major_label_orientation = pi / 3
-        self.p.xaxis.axis_label = self.heatgrid.x_axis
-        self.p.yaxis.axis_label = self.heatgrid.y_axis
+        p.grid.grid_line_color = None
+        p.axis.axis_line_color = None
+        p.axis.major_tick_line_color = None
+        p.axis.major_label_text_font_size = '12pt'
+        p.axis.major_label_standoff = 0
+        p.xaxis.major_label_orientation = pi / 3
+        p.xaxis.axis_label = self.heatgrid.x_axis
+        p.yaxis.axis_label = self.heatgrid.y_axis
 
         self.build_mapper()
 
-        self.p.rect(x='x', y='y', width=1, height=1,
+        p.rect(x='x', y='y', width=1, height=1,
                     source=self.source,
                     fill_color={'field': 'val', 'transform': self.mapper},
                     line_color=None)
+        return p
 
     def hovertool(self):
         '''This method builds or updates the hovertool'''
