@@ -67,7 +67,7 @@ def build_efficient_frontier(df):
         all_prices.append(prices)
     return rev, prof, all_prices
 
-def build_new_suggested_prices(df):
+def build_new_suggested_prices(df,outliers):
     '''This function creates a new column of IsoSugPrice, which is based off the isolation
     forest ensemble column'''
     dct = {}
@@ -80,6 +80,7 @@ def add_iso_sug_price(df):
     build_new_suggested_prices(df,outliers)
 
 def isoforestpred(df,fit_option, training_option):
+    '''returns predicted outliers for the dataframe provided with the fit and training options provided'''
     n_df = df.copy()
     n_df = df.sort_values(by='CurRev')
     if training_option == 'std':
@@ -129,6 +130,6 @@ def build_isoforest_preds(df):
     df['IsoForestPrice'] = df['CurPrice']
     inds = df['IsoForestPredict_ensemble']<max(df['IsoForestPredict_ensemble'])
     prices = plotter.find_closest_strat(df,indexes=inds)
-    df.loc[inds, 'IsoForestPreice'] = prices.values
+    df.loc[inds, 'IsoForestPrice'] = prices.values
     all_prices = plotter.find_closest_strat(df)
     df['FullAutoPricing'] = all_prices
