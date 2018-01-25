@@ -10,24 +10,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-saveloc='figures/AltPresentation/'
-
-def main():
+def main(saveloc='figures/AltPresentation/',fileloc=None):
     '''This function runs all the graphs, building new figures'''
-    df = build_data_frame()
-    make_revenue_heatmap(df)
-    make_price_heatmap(df)
-    make_price_varstd_heatmap(df)
-    make_isoforest_heatmap(df)
-    make_q_and_errors(df)
-    make_product_prof_rev(df)
-    make_product_frontier(df)
-    make_current_frontier(df)
-    make_isoforest_frontier(df)
-    make_full_frontier(df)
-    make_isoforest_price_heatmap(df)
-    make_isoforest_price_var_heatmap(df)
-    make_full_auto_price_var_heatmap(df)
+    df = build_data_frame(fileloc)
+    make_revenue_heatmap(df,saveloc)
+    make_price_heatmap(df,saveloc)
+    make_price_varstd_heatmap(df,saveloc)
+    make_isoforest_heatmap(df,saveloc)
+    make_q_and_errors(df,saveloc)
+    make_product_prof_rev(df,saveloc)
+    make_product_frontier(df,saveloc)
+    make_current_frontier(df,saveloc)
+    make_isoforest_frontier(df,saveloc)
+    make_full_frontier(df,saveloc)
+    make_isoforest_price_heatmap(df,saveloc)
+    make_isoforest_price_var_heatmap(df,saveloc)
+    make_full_auto_price_var_heatmap(df,saveloc)
 
 def build_data_frame(fileloc=None):
     '''This function builds the dataframe used for all the subsequent modeling'''
@@ -37,42 +35,42 @@ def build_data_frame(fileloc=None):
     modeling.build_isoforest_preds(df)
     return df
 
-def make_revenue_heatmap(df):
+def make_revenue_heatmap(df,saveloc):
     '''This function builds the image for the heatmap based on revenue'''
     data = heatmap.HeatGrid(df=df,target='CurRev',normalization=0)
     app = heatmap.HeatMap(heatgrid=data,title='Revenue Heatmap')
     app.build()
     export_png(app.p, filename=saveloc+'CurrentRevenueHeatmap.png')
 
-def make_price_heatmap(df):
+def make_price_heatmap(df,saveloc):
     '''This function builds the image for the heatmap based on revenue'''
     data = heatmap.HeatGrid(df=df,target='CurPrice',normalization=0)
     app = heatmap.HeatMap(heatgrid=data,title='Price Heatmap')
     app.build()
     export_png(app.p, filename=saveloc+'CurrentPriceHeatmap.png')
 
-def make_price_varstd_heatmap(df):
+def make_price_varstd_heatmap(df,saveloc):
     '''This function builds the image for the heatmap based on revenue'''
     data = heatmap.HeatGrid(df=df,target='CurPriceStdVariation',normalization=0)
     app = heatmap.HeatMap(heatgrid=data,title='Price Variation Standard Deviation')
     app.build()
     export_png(app.p, filename=saveloc+'CurrentPriceStdHeatmap.png')
 
-def make_isoforest_heatmap(df):
+def make_isoforest_heatmap(df,saveloc):
     '''This function builds the image for the heatmap isolation forest'''
     data = heatmap.HeatGrid(df=df,target='IsoForestPredict_ensemble',normalization=0)
     app = heatmap.HeatMap(heatgrid=data,title='Isolation Forest Ensemble Results')
     app.build()
     export_png(app.p, filename=saveloc+'IsoForestPredictEnsemble.png')
 
-def make_q_and_errors(df):
+def make_q_and_errors(df,saveloc):
     '''This function plots the Q vs price for the highest revenue product'''
     ind = np.argmax(df['CurRev'])
     fig = plotter.plot_q(df,ind)
     fig.savefig(saveloc+'Q_v_price.png')
     plt.close(fig)
 
-def make_product_prof_rev(df):
+def make_product_prof_rev(df,saveloc):
     '''This function plots the Revenue and Profit vs price for the highest revenue
     product'''
     ind = np.argmax(df['CurRev'])
@@ -80,20 +78,20 @@ def make_product_prof_rev(df):
     fig.savefig(saveloc+'Rev_prof_v_price.png')
     plt.close(fig)
 
-def make_product_frontier(df):
+def make_product_frontier(df,saveloc):
     '''this function plots the efficient frontier for a single product'''
     ind = np.argmax(df['CurRev'])
     fig = plotter.single_product_rev_v_profit(df,ind)
     fig.savefig(saveloc+'prof_v_rev.png')
     plt.close(fig)
 
-def make_current_frontier(df):
+def make_current_frontier(df,saveloc):
     '''This function plots the efficient frontier for an entier dataframe'''
     fig = plotter.efficient_frontier_plot(df)
     fig.savefig(saveloc+'efficient_frontier.png')
     plt.close(fig)
 
-def make_isoforest_frontier(df):
+def make_isoforest_frontier(df,saveloc):
     '''This function plots the efficient frontier for the detected outliers'''
     ind = df[df['IsoForestPredict_ensemble']<6].index
     n_df = df.loc[ind,:].copy()
@@ -105,7 +103,7 @@ def make_isoforest_frontier(df):
     fig.savefig(saveloc+'identified_points_efficient_frontier.png')
     plt.close(fig)
 
-def make_full_frontier(df,bounds=0):
+def make_full_frontier(df,saveloc,bounds=0):
     '''this function plots the efficient frontier, including all recommended prices'''
     fig = plotter.efficient_frontier_plot(df)
     rev = evaluation.calculate_revenue(df['FullAutoPricing'],df['FcstBeta'],df['Q'])
@@ -128,21 +126,21 @@ def make_full_frontier(df,bounds=0):
     # fig.savefig(saveloc+'full_efficient_frontier.png')
     # plt.close(fig)
 
-def make_isoforest_price_heatmap(df):
+def make_isoforest_price_heatmap(df,saveloc):
     '''This function builds the image for the heatmap isolation forest'''
     data = heatmap.HeatGrid(df=df,target='IsoForestPrice',sortby_y='IsoForestPrice',normalization=0)
     app = heatmap.HeatMap(heatgrid=data,title='Isolation Forest Ensemble Suggested Pricing')
     app.build()
     export_png(app.p, filename=saveloc+'IsoForestPredictEnsemblePrices.png')
 
-def make_isoforest_price_var_heatmap(df):
+def make_isoforest_price_var_heatmap(df,saveloc):
     '''This function builds the image for the heatmap isolation forest'''
     data = heatmap.HeatGrid(df=df,target='IsoForestPrice',sortby_y='IsoForestPrice',normalization=1)
     app = heatmap.HeatMap(heatgrid=data,title='Isolation Forest Ensemble Suggested Pricing variation')
     app.build()
     export_png(app.p, filename=saveloc+'IsoForestPredictEnsemblePricesVar.png')
 
-def make_full_auto_price_var_heatmap(df):
+def make_full_auto_price_var_heatmap(df,saveloc):
     '''This function builds the image for the heatmap isolation forest'''
     data = heatmap.HeatGrid(df=df,target='FullAutoPricing',sortby_y='FullAutoPricing',normalization=1)
     app = heatmap.HeatMap(heatgrid=data,title='Fully Automated Pricing Suggestion Variations')
