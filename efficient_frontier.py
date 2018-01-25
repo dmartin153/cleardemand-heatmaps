@@ -4,8 +4,9 @@ import numpy as np
 import evaluation
 
 def build_efficient_frontier(df):
-    '''This function returns the revenue and profit of different strategies of the efficient frontier'''
-    strategies = np.linspace(0,1,101)
+    '''This function returns the revenue and profit of different strategies
+    of the efficient frontier'''
+    strategies = np.linspace(0, 1, 101)
     betas = df['FcstBeta']
     qs = df['Q']
     costs = df['Cost']
@@ -14,16 +15,18 @@ def build_efficient_frontier(df):
     all_prices = []
     for strategy in strategies:
         prices = strategy*costs + 1/betas
-        revenue = evaluation.calculate_revenue(prices,betas,qs).sum()
-        profit = evaluation.calculate_profit(prices,betas,qs,costs).sum()
+        revenue = evaluation.calculate_revenue(prices, betas, qs).sum()
+        profit = evaluation.calculate_profit(prices, betas, qs, costs).sum()
         rev.append(revenue)
         prof.append(profit)
         all_prices.append(prices)
     return rev, prof, all_prices
 
-def find_price_variants(price,density=201,max_change_percent=0.15):
+def find_price_variants(price, density=201, max_change_percent=0.15):
+    '''returns an array of prices to try, given the central price to edit around,
+     the density of prices to try, and the maximum percentage to change the price by'''
     max_change = price*max_change_percent
-    price_variations_to_try = np.linspace(-max_change,max_change,density)
+    price_variations_to_try = np.linspace(-max_change, max_change, density)
     return price_variations_to_try
 
 def calc_pot_rev_profs(base_price, variations, beta, q, cost):
@@ -57,8 +60,8 @@ def calc_strat_weights(strategies=4):
         revenue_weights - numpy array, amount to oweight each revenue for the given strategy '''
     min_weight = 0
     max_weight = 1
-    profit_weights = np.linspace(min_weight,max_weight,strategies)
-    revenue_weights = np.linspace(max_weight,min_weight,strategies)
+    profit_weights = np.linspace(min_weight, max_weight, strategies)
+    revenue_weights = np.linspace(max_weight, min_weight, strategies)
     return profit_weights, revenue_weights
 
 def find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights):
@@ -73,29 +76,30 @@ def find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
         revenues - revenues for each strategy'''
     profits = []
     revenues = []
-    for index in range(0,len(profit_weights)): #For each strategy
+    for index in range(0, len(profit_weights)): #For each strategy
         profit_weight = profit_weights[index]
         revenue_weight = revenue_weights[index]
-        strat_ind = np.argmax(pot_profs*profit_weight + pot_revs*revenue_weight) #Index which maximizes strategy
+        #Index which maximizes strategy
+        strat_ind = np.argmax(pot_profs*profit_weight + pot_revs*revenue_weight)
         profits.append(pot_profs[strat_ind])
         revenues.append(pot_revs[strat_ind])
     return np.array(profits), np.array(revenues)
 
-def find_closest_strat(df,indexes=None):
+def find_closest_strat(df, indexes=None):
     '''This function finds the best prices for all the indexes provided, with the
     objective of maximizing the distance the profit revenue graph goes away from
     the origin. Defaults to all indexes'''
     if indexes is None:
         indexes = df.index
-    n_df = df.loc[indexes,:].copy()
-    theta = modeling.estimate_cur_strat(df)
-    rev, prof, all_prices = modeling.build_efficient_frontier(n_df)
+    n_df = df.loc[indexes, :].copy()
+    theta = estimate_cur_strat(df)
+    rev, prof, all_prices = build_efficient_frontier(n_df)
     pot_thetas = np.arctan(np.array(prof) / np.array(rev))
     ind = np.argmin(abs(theta - pot_thetas))
     prices = all_prices[ind]
     return prices
 
-def calculate_q(q0,beta,cur_price,new_price):
+def calculate_q(q0, beta, cur_price, new_price):
     '''This function calculates q at a new price'''
     Q = q0 * np.exp(-beta*(new_price-cur_price))
     return Q

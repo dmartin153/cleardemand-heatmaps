@@ -1,4 +1,5 @@
 '''This module contains the class for the heatmap object'''
+from math import pi
 import data_processing
 from bokeh.models import (
     ColumnDataSource,
@@ -7,16 +8,13 @@ from bokeh.models import (
     ColorBar,
     BasicTicker
 )
-import pdb
-from math import pi
 from bokeh.plotting import figure
 import numpy as np
-from bokeh.palettes import RdYlGn10 as pal
 
 class HeatMap(object):
     '''This class contains information used in the heatmap'''
 
-    def __init__(self, heatgrid=None, pal='Viridis256', p=None, title='Interactive Heatmap'):
+    def __init__(self, heatgrid=None, pal='Viridis256', title='Interactive Heatmap'):
         '''This initializes the class'''
         self.heatgrid = heatgrid
         self.pal = pal
@@ -24,9 +22,9 @@ class HeatMap(object):
 
     def generate_figure(self):
         '''This instantiates a figure object'''
-        TOOLS = "pan,wheel_zoom,reset,hover,save"
+        tools = "pan,wheel_zoom,reset,hover,save"
         self.p = figure(
-            title=self.title, tools=TOOLS,
+            title=self.title, tools=tools,
             x_axis_location='above',
             toolbar_location='below'
         )
@@ -58,9 +56,10 @@ class HeatMap(object):
 
     def build_mapper(self):
         '''This method builds the mapper and ColorBar'''
-        self.mapper = LinearColorMapper(palette=self.pal, low=min(self.source.data['val']), high=max(self.source.data['val']))
+        self.mapper = LinearColorMapper(palette=self.pal, low=min(self.source.data['val']),
+                                        high=max(self.source.data['val']))
         self.color_bar = ColorBar(color_mapper=self.mapper, ticker=BasicTicker(),
-                                label_standoff=12, border_line_color=None, location=(0,0))
+                                  label_standoff=12, border_line_color=None, location=(0, 0))
 
     def build(self):
         '''This method runs all the steps necessary to build the plot'''
@@ -83,9 +82,10 @@ class HeatMap(object):
 class HeatGrid(object):
     '''This class is used to populat the grid of the heatmap'''
 
-    def __init__(self, df=None, target='CurPrice', sortby_x='CurRev',sortby_y='CurPrice', normalization=1,
-                x_axis='ProductId', y_axis='AreaId', selection_criteria={'SalesTypeId':1},
-                x_display='ProductDescription', y_display='AreaId'):
+    def __init__(self, df=None, target='CurPrice', sortby_x='CurRev', sortby_y='CurPrice',
+                 normalization=1, x_axis='ProductId', y_axis='AreaId',
+                 selection_criteria={'SalesTypeId':1}, x_display='ProductDescription',
+                 y_display='AreaId'):
         '''Initialize the class '''
         self.df = df
         self.target = target
@@ -94,7 +94,7 @@ class HeatGrid(object):
         self.normalization = normalization
         self.x_axis = x_axis
         self.y_axis = y_axis
-        self.selection_criteria =selection_criteria
+        self.selection_criteria = selection_criteria
         self.x_display = x_display
         self.y_display = y_display
 
@@ -115,7 +115,7 @@ class HeatGrid(object):
             #Find the average target for each x value
             x_avgs = dict()
             for true_x, x_loc in self.interpret_xs.iteritems():
-                x_avg = self.df[self.df[self.x_axis]==true_x][self.target].mean()
+                x_avg = self.df[self.df[self.x_axis] == true_x][self.target].mean()
                 x_avgs[x_loc] = x_avg
             #Subtract the average value from each point
             target = target - [x_avgs[x_loc] for x_loc in x_locs]
@@ -123,7 +123,7 @@ class HeatGrid(object):
             #Find the average target for each y value
             y_avgs = dict()
             for true_y, y_loc in self.interpret_ys.iteritems():
-                y_avg = self.df[self.df[self.y_axis]==true_y][self.target].mean()
+                y_avg = self.df[self.df[self.y_axis] == true_y][self.target].mean()
                 y_avgs[y_loc] = y_avg
             #Subtract the average value from each point
             target = target - [y_avgs[y_loc] for y_loc in y_locs]
@@ -133,7 +133,7 @@ class HeatGrid(object):
 
         return x_locs, y_locs, x_names, y_names, target
 
-    def grab_data(self,datafile='PriceBook.csv'):
+    def grab_data(self, datafile='PriceBook.csv'):
         '''This method grabs new data and puts it in the dataframe'''
         self.df = data_processing.main(datafile)
 
@@ -148,8 +148,8 @@ class HeatGrid(object):
         sorted_x_inds = np.argsort(total_x_targets)
         sorted_y_inds = np.argsort(total_y_targets)
 
-        self.interpret_xs = dict(zip(raw_xs[sorted_x_inds[::-1]],range(0,len(raw_xs))))
-        self.interpret_ys = dict(zip(raw_ys[sorted_y_inds],range(0,len(raw_ys))))
+        self.interpret_xs = dict(zip(raw_xs[sorted_x_inds[::-1]], range(0, len(raw_xs))))
+        self.interpret_ys = dict(zip(raw_ys[sorted_y_inds], range(0, len(raw_ys))))
 
     def generate_source_data(self):
         '''This method generates the source to be used in the plotting figure'''
