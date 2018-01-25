@@ -42,31 +42,6 @@ def iso_forest_predict_outliers(df):
         outliers.append(outlier_inds)
     return outliers
 
-def estimate_cur_strat(df):
-    '''This function returns the given strategy, where the strategy is defined as
-    the angle which forms a line out to the profit and revenue position a graph
-    of profit vs revenue.'''
-    strat_angle = np.arctan(df['CurProfit'].sum()/df['CurRev'].sum())
-    return strat_angle
-
-def build_efficient_frontier(df):
-    '''This function returns the revenue and profit of different strategies of the efficient frontier'''
-    strategies = np.linspace(0,1,101)
-    betas = df['FcstBeta']
-    qs = df['Q']
-    costs = df['Cost']
-    rev = []
-    prof = []
-    all_prices = []
-    for strategy in strategies:
-        prices = strategy*costs + 1/betas
-        revenue = evaluation.calculate_revenue(prices,betas,qs).sum()
-        profit = evaluation.calculate_profit(prices,betas,qs,costs).sum()
-        rev.append(revenue)
-        prof.append(profit)
-        all_prices.append(prices)
-    return rev, prof, all_prices
-
 def build_new_suggested_prices(df,outliers):
     '''This function creates a new column of IsoSugPrice, which is based off the isolation
     forest ensemble column'''
@@ -105,31 +80,3 @@ def isoforestpred(df,fit_option, training_option):
     full_data = scaler.fit_transform(full_data)
     preds = iso_for.predict(full_data)
     return preds
-
-def build_isoforest_preds(df):
-    '''This function adds isolation forest predictions for the given data set. Specifically,
-    it builds seven models, they are divided as follows:
-    The following are trained off the entire dataset:
-    IsoForestPredict_std -- prediction made from an isolation forest on the standard deviations
-    IsoForestPredict_var -- prediction made from an isolation forest on the absolute variation
-    IsoForestPredict_stdvar -- prediction made from an isolation forest on the standard deviation and absolute variations
-    The Following are trained off only the top 256 revenue items:
-    IsoForestPredict_std_toprev -- prediction made from an isolation forest on the standard deviation
-    IsoForestPredict_var_toprev -- prediction made from an isolation forest on the absolute variation
-    IsoForestPredict_stdvar_toprev -- prediction made from an isolation forest on the standard deviation and absolute variation
-
-    IsoForestPredict_ensemble -- voting ensemble of the above six models'''
-    fit_options = ['all', 'toprev']
-    training_options = ['std', 'var', 'stdvar']
-    df['IsoForestPredict_ensemble'] = 0
-    for fit_option in fit_options:
-        for training_option in training_options:
-            preds = isoforestpred(df,fit_option,training_option)
-            df['IsoForestPredict_'+fit_option+'_'+training_option] = preds
-            df['IsoForestPredict_ensemble'] += preds
-    df['IsoForestPrice'] = df['CurPrice']
-    inds = df['IsoForestPredict_ensemble']<max(df['IsoForestPredict_ensemble'])
-    prices = plotter.find_closest_strat(df,indexes=inds)
-    df.loc[inds, 'IsoForestPrice'] = prices.values
-    all_prices = plotter.find_closest_strat(df)
-    df['FullAutoPricing'] = all_prices

@@ -94,3 +94,18 @@ def explained_variance(df,cols=None):
     plt.ylabel('Expained Variance (proportion)')
     fig.show()
     return pca
+
+def find_labeled_points(label,df):
+    '''This function makes a list of potential revenues or profits using the
+    clustering done in 'cluster_labels' and values in the label passed in'''
+    row_index = df.index
+    clusters = df['cluster_labels'].unique()
+    keypoints = df[label]
+    outputs = []
+    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
+        val = 0
+        for per_ind in range(0,len(permut_index)):
+            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
+            val += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
+        outputs.append(val)
+    return outputs

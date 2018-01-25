@@ -4,6 +4,7 @@ import pdb
 import numpy as np
 import confidential
 import evaluation
+import efficient_frontier
 import modeling
 
 def small_load(fileloc):
@@ -111,76 +112,16 @@ def add_q(df):
     '''This function adds Q to the dataframe, requires CurPrice, FcstBeta, and CurRev'''
     df['Q'] = df['CurRev'] / (df['CurPrice'] * np.exp(-df['CurPrice'] * df['FcstBeta']))
 
-def find_price_variants(price,density=201,max_change_percent=0.15):
-    max_change = price*max_change_percent
-    price_variations_to_try = np.linspace(-max_change,max_change,density)
-    return price_variations_to_try
-
-def calc_pot_rev_profs(base_price, variations, beta, q, cost):
-    '''This function calculates the potential revenues and profits for the provided
-    variations to the given price
-    Inputs:
-        base_price - float, price to base variations off of
-        variations - numpy array of variations to apply to price
-        beta - float, beta value for elasticity
-        q - float, q value for elasticity
-        cost - float, cost of product
-    Outputs:
-        pot_revs - numpy array with revenues for each variation
-        pot_prof - numpy array with profit for each variation '''
-    pot_revs = []
-    pot_profs = []
-    for price_variation in variations:
-        price = base_price + price_variation
-        rev = evaluation.calculate_revenue(price, beta, q)
-        prof = evaluation.calculate_profit(price, beta, q, cost)
-        pot_revs.append(rev)
-        pot_profs.append(prof)
-    return np.array(pot_revs), np.array(pot_profs)
-
-def calc_strat_weights(strategies=4):
-    '''This calculates the weights to give each strategy
-    Inputs:
-        strategies - int, number of strategies to consider
-    Outputs:
-        profit_weights - numpy array, amount to weight each profit for the given strategy
-        revenue_weights - numpy array, amount to oweight each revenue for the given strategy '''
-    min_weight = 0
-    max_weight = 1
-    profit_weights = np.linspace(min_weight,max_weight,strategies)
-    revenue_weights = np.linspace(max_weight,min_weight,strategies)
-    return profit_weights, revenue_weights
-
-def find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights):
-    '''This function finds profit revenue pairs which maximize returns for the given weights
-    Inputs:
-        pot_revs - numpy array, revenues for different pricings
-        pot_profs - numpy array, profits for different pricings
-        profit_weights - numpy array, profit weight for each strategy
-        revenue_weights - numpy array, revenue weight for each strategy
-    Outputs:
-        profits - profits for each strategy
-        revenues - revenues for each strategy'''
-    profits = []
-    revenues = []
-    for index in range(0,len(profit_weights)): #For each strategy
-        profit_weight = profit_weights[index]
-        revenue_weight = revenue_weights[index]
-        strat_ind = np.argmax(pot_profs*profit_weight + pot_revs*revenue_weight) #Index which maximizes strategy
-        profits.append(pot_profs[strat_ind])
-        revenues.append(pot_revs[strat_ind])
-    return np.array(profits), np.array(revenues)
-
 def add_key_points(df,strategies=10):
     '''This function builds the key profit and revenue points for different strategies
     for a dataframe. Used to plot the production possibility frontier of the dataset.'''
     prof_points = []
     rev_points = []
     for index, row in df.iterrows():
-        price_variations_to_try = find_price_variants(row['CurPrice'])
-        pot_revs, pot_profs = calc_pot_rev_profs(row['CurPrice'], price_variations_to_try, row['FcstBeta'], row['Q'], row['Cost'])
-        profit_weights, revenue_weights = calc_strat_weights(strategies)
-        strat_profits, strat_revs = find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
+        price_variations_to_try = efficient_frontier.find_price_variants(row['CurPrice'])
+        pot_revs, pot_profs = efficient_frontier.calc_pot_rev_profs(row['CurPrice'], price_variations_to_try, row['FcstBeta'], row['Q'], row['Cost'])
+        profit_weights, revenue_weights = efficient_frontier.calc_strat_weights(strategies)
+        strat_profits, strat_revs = efficient_frontier.find_strategy_prof_rev(pot_revs, pot_profs, profit_weights, revenue_weights)
         prof_points.append(strat_profits)
         rev_points.append(strat_revs)
     df['KeyProfitPoints'] = prof_points
@@ -199,3 +140,31 @@ def add_price_variation(df):
     standardized_variation = raw_variation / np.array([stds[key] for key in df['ProductId'].values])
     df['CurPriceVariation'] = raw_variation
     df['CurPriceStdVariation'] = np.nan_to_num(standardized_variation)
+
+def build_isoforest_preds(df):
+    '''This function adds isolation forest predictions for the given data set. Specifically,
+    it builds seven models, they are divided as follows:
+    The following are trained off the entire dataset:
+    IsoForestPredict_std -- prediction made from an isolation forest on the standard deviations
+    IsoForestPredict_var -- prediction made from an isolation forest on the absolute variation
+    IsoForestPredict_stdvar -- prediction made from an isolation forest on the standard deviation and absolute variations
+    The Following are trained off only the top 256 revenue items:
+    IsoForestPredict_std_toprev -- prediction made from an isolation forest on the standard deviation
+    IsoForestPredict_var_toprev -- prediction made from an isolation forest on the absolute variation
+    IsoForestPredict_stdvar_toprev -- prediction made from an isolation forest on the standard deviation and absolute variation
+
+    IsoForestPredict_ensemble -- voting ensemble of the above six models'''
+    fit_options = ['all', 'toprev']
+    training_options = ['std', 'var', 'stdvar']
+    df['IsoForestPredict_ensemble'] = 0
+    for fit_option in fit_options:
+        for training_option in training_options:
+            preds = modeling.isoforestpred(df,fit_option,training_option)
+            df['IsoForestPredict_'+fit_option+'_'+training_option] = preds
+            df['IsoForestPredict_ensemble'] += preds
+    df['IsoForestPrice'] = df['CurPrice']
+    inds = df['IsoForestPredict_ensemble']<max(df['IsoForestPredict_ensemble'])
+    prices = plotter.find_closest_strat(df,indexes=inds)
+    df.loc[inds, 'IsoForestPrice'] = prices.values
+    all_prices = plotter.find_closest_strat(df)
+    df['FullAutoPricing'] = all_prices

@@ -8,9 +8,11 @@ import os
 import pdb
 import evaluation
 import itertools
+import clustering
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import data_processing, modeling
+import efficient_frontier
 
 
 def build_basic_heatmap(df, index, column, value):
@@ -111,26 +113,11 @@ def check_dir(location):
     if not os.path.exists(location):
         os.makedirs(location)
 
-def find_labeled_points(label,df):
-    '''This function makes a list of potential revenues or profits using the
-    clustering done in 'cluster_labels' and values in the label passed in'''
-    row_index = df.index
-    clusters = df['cluster_labels'].unique()
-    keypoints = df[label]
-    outputs = []
-    for permut_index in itertools.product(range(0,len(keypoints[0])), repeat=len(clusters)):
-        val = 0
-        for per_ind in range(0,len(permut_index)):
-            clusterinds = df[df['cluster_labels'] == clusters[per_ind]].index
-            val += df.loc[clusterinds, label].apply(lambda x: x[permut_index[per_ind]]).sum()
-        outputs.append(val)
-    return outputs
-
 def plot_ppf(df,title=None):
     '''this function plots a basic production possibility frontier'''
     sns.set()
-    profits = find_labeled_points('KeyProfitPoints',df)
-    revs = find_labeled_points('KeyRevPoints',df)
+    profits = clustering.find_labeled_points('KeyProfitPoints',df)
+    revs = clustering.find_labeled_points('KeyRevPoints',df)
     fig = plt.figure()
     plt.plot(revs,profits, 'g.', alpha=0.5, label='Strategy Variants')
     plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'r.', label='Current Prices')
@@ -219,23 +206,9 @@ def single_product_rev_v_profit(df,index,bounds=0):
     plt.tight_layout()
     return fig
 
-def find_closest_strat(df,indexes=None):
-    '''This function finds the best prices for all the indexes provided, with the
-    objective of maximizing the distance the profit revenue graph goes away from
-    the origin. Defaults to all indexes'''
-    if indexes is None:
-        indexes = df.index
-    n_df = df.loc[indexes,:].copy()
-    theta = modeling.estimate_cur_strat(df)
-    rev, prof, all_prices = modeling.build_efficient_frontier(n_df)
-    pot_thetas = np.arctan(np.array(prof) / np.array(rev))
-    ind = np.argmin(abs(theta - pot_thetas))
-    prices = all_prices[ind]
-    return prices
-
 def efficient_frontier_plot(df):
     '''This function makes a plot of maximum revenue vs profit for the provided dataframe'''
-    rev, prof, _= modeling.build_efficient_frontier(df)
+    rev, prof, _= efficient_frontier.build_efficient_frontier(df)
     sns.set()
     fig = plt.figure()
     plt.plot(rev,prof,'r',label='Efficient Frontier')
@@ -247,11 +220,6 @@ def efficient_frontier_plot(df):
     plt.tight_layout()
     return fig
 
-def calculate_q(q0,beta,cur_price,new_price):
-    '''This function calculates q at a new price'''
-    Q = q0 * np.exp(-beta*(new_price-cur_price))
-    return Q
-
 def plot_q(df,index):
     '''This function plots Q vs price for a variety of prices for the dataframe's indexed row'''
     current_price = df['CurPrice'][index]
@@ -262,7 +230,7 @@ def plot_q(df,index):
     prices = price_variants+current_price
     sns.set()
     fig = plt.figure()
-    Qs=calculate_q(q,beta,current_price,prices)
+    Qs=efficient_frontier.calculate_q(q,beta,current_price,prices)
     beta_max = 1/df['AlphaMin'][index]
     beta_min = 1/df['AlphaMax'][index]
     beta_sigma = (beta_max - beta_min) / 2

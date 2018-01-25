@@ -32,7 +32,7 @@ def build_data_frame(fileloc=None):
     if fileloc is None:
         fileloc = confidential.presentation_data_file()
     df = data_processing.main(fileloc)
-    modeling.build_isoforest_preds(df)
+    data_processing.build_isoforest_preds(df)
     return df
 
 def make_revenue_heatmap(df,saveloc):
