@@ -8,7 +8,7 @@ from bokeh.io import export_png
 import numpy as np
 import matplotlib.pyplot as plt
 
-def main(saveloc='figures/AltPresentation/', fileloc=None):
+def main(saveloc='../figures/FullPresentation/', fileloc=None):
     '''This function runs all the graphs, building new figures'''
     df = build_data_frame(fileloc)
     make_revenue_heatmap(df, saveloc)
@@ -64,7 +64,7 @@ def make_isoforest_heatmap(df, saveloc):
 def make_q_and_errors(df, saveloc):
     '''This function plots the Q vs price for the highest revenue product'''
     ind = np.argmax(df['CurRev'])
-    fig = plotter.plot_q(df, ind)
+    fig = plotter.plot_quantity(df, ind)
     fig.savefig(saveloc+'Q_v_price.png')
     plt.close(fig)
 
@@ -98,9 +98,14 @@ def make_isoforest_frontier(df, saveloc):
     prof = evaluation.calculate_profit(n_df['IsoForestPrice'], n_df['FcstBeta'],
                                        n_df['Q'], n_df['Cost'])
     plt.plot(rev.sum(), prof.sum(), 'bo', label='Recommended Pricing')
+    plt.plot([rev.sum(),df.loc[ind, 'CurRev'].sum()],[prof.sum(),df.loc[ind, 'CurProfit'].sum()],'k--')
     plt.legend()
     fig.savefig(saveloc+'identified_points_efficient_frontier.png')
     plt.close(fig)
+    rev_diff = rev.sum() - df.loc[ind, 'CurRev'].sum()
+    prof_diff = prof.sum() - df.loc[ind, 'CurProfit'].sum()
+    print('Isolation Forests increases Profit by: {}, a {}% increase'.format(prof_diff,prof_diff/df.loc[ind, 'CurProfit'].sum()))
+    print('Isolation Forests increases Revenue by: {}, a {}% increase'.format(rev_diff,rev_diff/df.loc[ind, 'CurRev'].sum()))
 
 def make_full_frontier(df, saveloc, bounds=0):
     '''this function plots the efficient frontier, including all recommended prices'''
@@ -119,10 +124,15 @@ def make_full_frontier(df, saveloc, bounds=0):
         plt.plot(min_rev.sum(), min_prof.sum(), 'k.', label='Minimum Revenue Error')
         plt.plot(max_rev.sum(), max_prof.sum(), 'k.', label='Maximum Revenue Error')
     plt.plot(rev.sum(), prof.sum(), 'bo', label='Recommended Pricing')
+    plt.plot([rev.sum(),df['CurRev'].sum()],[prof.sum(),df['CurProfit'].sum()],'k--')
     plt.legend()
-    return fig
-    # fig.savefig(saveloc+'full_efficient_frontier.png')
-    # plt.close(fig)
+    fig.savefig(saveloc+'full_efficient_frontier.png')
+    plt.close(fig)
+    rev_diff = rev.sum() - df['CurRev'].sum()
+    prof_diff = prof.sum() - df['CurProfit'].sum()
+    print('Full automation increases Profit by: {}, a {}% increase'.format(prof_diff,prof_diff/df['CurProfit'].sum()))
+    print('Full automation increases Revenue by: {}, a {}% increase'.format(rev_diff,rev_diff/df['CurRev'].sum()))
+
 
 def make_isoforest_price_heatmap(df, saveloc):
     '''This function builds the image for the heatmap isolation forest'''

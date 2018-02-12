@@ -19,33 +19,36 @@ class HeatMap(object):
         self.heatgrid = heatgrid
         self.pal = pal
         self.title = title
-        self.p = generate_figure
+        # self.p = generate_figure
 
-    @property
+    # @property
     def generate_figure(self):
         '''This instantiates a figure object'''
         tools = "pan,wheel_zoom,reset,hover,save"
-        p = figure(
-            title=self.title, tools=tools,
+        self.p = figure(
+            # title=self.title,
+            tools=tools,
             x_axis_location='above',
             toolbar_location='below'
         )
-        p.grid.grid_line_color = None
-        p.axis.axis_line_color = None
-        p.axis.major_tick_line_color = None
-        p.axis.major_label_text_font_size = '12pt'
-        p.axis.major_label_standoff = 0
-        p.xaxis.major_label_orientation = pi / 3
-        p.xaxis.axis_label = self.heatgrid.x_axis
-        p.yaxis.axis_label = self.heatgrid.y_axis
+        self.p.grid.grid_line_color = None
+        self.p.axis.axis_line_color = None
+        self.p.axis.major_tick_line_color = None
+        self.p.axis.major_label_text_font_size = '24pt'
+        self.p.axis.major_label_standoff = 0
+        self.p.xaxis.major_label_orientation = pi / 3
+        self.p.xaxis.axis_label = None
+        self.p.yaxis.axis_label = None
+        # self.p.xaxis.axis_label = self.heatgrid.x_axis
+        # self.p.yaxis.axis_label = self.heatgrid.y_axis
 
         self.build_mapper()
 
-        p.rect(x='x', y='y', width=1, height=1,
+        self.p.rect(x='x', y='y', width=1, height=1,
                     source=self.source,
                     fill_color={'field': 'val', 'transform': self.mapper},
                     line_color=None)
-        return p
+        # return p
 
     def hovertool(self):
         '''This method builds or updates the hovertool'''
@@ -62,7 +65,8 @@ class HeatMap(object):
         self.mapper = LinearColorMapper(palette=self.pal, low=min(self.source.data['val']),
                                         high=max(self.source.data['val']))
         self.color_bar = ColorBar(color_mapper=self.mapper, ticker=BasicTicker(),
-                                  label_standoff=12, border_line_color=None, location=(0, 0))
+                                  label_standoff=12, border_line_color=None, location=(0, 0),
+                                  major_label_text_font_size='24pt')
 
     def build(self):
         '''This method runs all the steps necessary to build the plot'''

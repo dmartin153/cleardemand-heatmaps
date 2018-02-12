@@ -117,7 +117,7 @@ def add_key_points(df, strategies=10):
     prof_points = []
     rev_points = []
     for _, row in df.iterrows():
-        price_variations_to_try = efficient_frontier.find_price_variants(row['CurPrice'])
+        price_variations_to_try = efficient_frontier.find_price_variants(row['CurPrice'],max_change_percent=1.0)
         pot_revs, pot_profs = efficient_frontier.calc_pot_rev_profs(row['CurPrice'],
                                                                     price_variations_to_try,
                                                                     row['FcstBeta'], row['Q'],

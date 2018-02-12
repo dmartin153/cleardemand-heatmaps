@@ -25,8 +25,8 @@ def build_efficient_frontier(df):
 def find_price_variants(price, density=201, max_change_percent=0.15):
     '''returns an array of prices to try, given the central price to edit around,
      the density of prices to try, and the maximum percentage to change the price by'''
-    max_change = price*max_change_percent
-    price_variations_to_try = np.linspace(-max_change, max_change, density)
+    max_change = np.ceil(100*price*max_change_percent) / 100.
+    price_variations_to_try = np.arange(-max_change, max_change, 0.01)
     return price_variations_to_try
 
 def calc_pot_rev_profs(base_price, variations, beta, q, cost):
@@ -110,3 +110,18 @@ def estimate_cur_strat(df):
     of profit vs revenue.'''
     strat_angle = np.arctan(df['CurProfit'].sum()/df['CurRev'].sum())
     return strat_angle
+
+def calculate_quantity(q0, beta, cur_price, new_price, beta_min=None, beta_max=None):
+    '''This function returns the quantity and the bounds of the quantity given the parameters'''
+    quantity = q0*np.exp(-beta*new_price)
+    if beta_min is not None:
+        q_min = q0*np.exp(-beta*cur_price)/np.exp(-beta_min*cur_price)
+        quant_lower = q_min*np.exp(-beta_min*new_price)
+    else:
+        quant_lower = None
+    if beta_max is not None:
+        q_max = q0*np.exp(-beta*cur_price)/np.exp(-beta_max*cur_price)
+        quant_upper = q_max*np.exp(-beta_max*new_price)
+    else:
+        quant_upper = None
+    return quantity, quant_upper, quant_lower

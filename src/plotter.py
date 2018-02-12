@@ -116,18 +116,21 @@ def check_dir(location):
 
 def plot_ppf(df, title=None):
     '''this function plots a basic production possibility frontier'''
-    sns.set()
+    sns.set(font_scale=1.6, rc={'lines.linewidth': 2.5})
     profits = clustering.find_labeled_points('KeyProfitPoints', df)
     revs = clustering.find_labeled_points('KeyRevPoints', df)
-    fig = plt.figure()
+    fig, ax = plt.subplots()
     plt.plot(revs, profits, 'g.', alpha=0.5, label='Strategy Variants')
-    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'r.', label='Current Prices')
-    plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'b.', label='Recommended Prices')
+    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'bo', label='Current Prices')
+    plt.plot(df['RecRev'].sum(), df['RecProfit'].sum(), 'ko', label='Recommended Prices')
+    ef_revs, ef_profs, _ = efficient_frontier.build_efficient_frontier(df)
+    plt.plot(ef_revs, ef_profs, 'r', label='Efficient Frontier')
     plt.xlabel('Total Revenue')
     plt.ylabel('Total Profit')
     plt.legend()
     if title:
         plt.title(title)
+    ax.ticklabel_format(style='sci', scilimits=(0,0), axis='x', useMathText=True)
     plt.tight_layout()
     return fig
 
@@ -150,7 +153,7 @@ def make_and_save_ppf(df, name, cluster_cols=None, n_clusters=3, n_strats=8):
     efficient frontier and makes and saves a figure with the provided inputs'''
     if cluster_cols is None:
         cluster_cols = ['CurRev']
-    saveloc = 'figures/PPFs/'
+    saveloc = '../figures/PPFs/'
     check_dir(saveloc)
     plot_name = name+'_{}strats_{}clusters_of_{}'.format(n_strats, n_clusters,
                                                          '_'.join(cluster_cols))
@@ -160,24 +163,45 @@ def make_and_save_ppf(df, name, cluster_cols=None, n_clusters=3, n_strats=8):
     fig.savefig(saveloc+plot_name+'.jpg')
     plt.close(fig)
 
-def dollar_v_price(df, index):
-    '''This function makes a plot of dollars vs price for the provided index into the
-    data frame'''
+def find_rev_and_prof(df, index):
+    '''This function returns the revenue and profit and their bounds for the given index of
+    the provided dataframe'''
     current_price = df['CurPrice'][index]
     beta = df['FcstBeta'][index]
     q = df['Q'][index]
     cost = df['Cost'][index]
     price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=1.)
     prices = price_variants+current_price
-    revenue = evaluation.calculate_revenue(prices, beta, q)
-    profit = evaluation.calculate_profit(prices, beta, q, cost)
-    sns.set()
-    fig = plt.figure()
+    beta_max = 1/df['AlphaMin'][index]
+    beta_min = 1/df['AlphaMax'][index]
+    quantities, quant_upper, quant_lower = efficient_frontier.calculate_quantity(q, beta, current_price,
+                                                                                 prices, beta_min, beta_max)
+    revenue = quantities * prices
+    profit = quantities * (prices - cost)
+    upper_rev = quant_upper * prices
+    lower_rev = quant_lower * prices
+    upper_prof = quant_upper * (prices - cost)
+    lower_prof = quant_lower * (prices - cost)
+    return prices, revenue, upper_rev, lower_rev, profit, upper_prof, lower_prof
+
+def dollar_v_price(df, index):
+    '''This function makes a plot of dollars vs price for the provided index into the
+    data frame'''
+    prices, revenue, upper_rev, lower_rev, profit, upper_prof, lower_prof = find_rev_and_prof(df, index)
+    sns.set(font_scale=1.6, rc={'lines.linewidth': 2.5})
+    fig, ax = plt.subplots()
     plt.plot(prices, revenue, 'r', label='Revenue')
-    plt.plot(prices, profit, 'b', label='Profit')
+    # plt.plot(prices, upper_rev, 'r--', label='Revenue Bounds')
+    # plt.plot(prices, lower_rev, 'r--')
+    plt.plot(prices, profit, 'g', label='Profit')
+    plt.axvline(x=df['CurPrice'][index], color='b', linestyle='--', label='Current Price')
+
+    # plt.plot(prices, upper_prof, 'b--', label='Profit Bounds')
+    # plt.plot(prices, lower_prof, 'b--')
     plt.xlabel('Price ($)')
     plt.ylabel('Return ($)')
-    plt.title('Revenue & Profit for varying prices')
+    plt.title('Revenue & Profit vs price')
+    ax.ticklabel_format(style='sci', scilimits=(0,0), axis='y', useMathText=True)
     plt.legend()
     plt.tight_layout()
     return fig
@@ -185,47 +209,71 @@ def dollar_v_price(df, index):
 def single_product_rev_v_profit(df, index, bounds=0):
     '''This function makes a plot of revenue vs profit for the provided index for a variety of
     prices'''
-    current_price = df['CurPrice'][index]
-    beta = df['FcstBeta'][index]
-    q = df['Q'][index]
-    cost = df['Cost'][index]
-    price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=1.)
-    prices = price_variants+current_price
-    if bounds == 1:
-        beta_max = 1. / df['AlphaMin'][index]
-        q_max = df['CurQty'][index] / np.exp(-beta_max * df['CurPrice'][index])
-        beta_min = 1. / df['AlphaMax'][index]
-        q_min = df['CurQty'][index] / np.exp(-beta_min * df['CurPrice'][index])
-        max_beta_rev = evaluation.calculate_revenue(prices, beta_max, q_max)
-        min_beta_rev = evaluation.calculate_revenue(prices, beta_min, q_min)
-        max_beta_prof = evaluation.calculate_profit(prices, beta_max, q_max, cost)
-        min_beta_prof = evaluation.calculate_profit(prices, beta_min, q_min, cost)
-    revenue = evaluation.calculate_revenue(prices, beta, q)
-    profit = evaluation.calculate_profit(prices, beta, q, cost)
-    sns.set()
-    fig = plt.figure()
+    prices, revenue, upper_rev, lower_rev, profit, upper_prof, lower_prof = find_rev_and_prof(df, index)
+    # current_price = df['CurPrice'][index]
+    # beta = df['FcstBeta'][index]
+    # q = df['Q'][index]
+    # cost = df['Cost'][index]
+    # price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=0.15)
+    # prices = price_variants+current_price
+    # if bounds == 1:
+    #     beta_max = 1. / df['AlphaMin'][index]
+    #     q_max = df['CurQty'][index] / np.exp(-beta_max * df['CurPrice'][index])
+    #     beta_min = 1. / df['AlphaMax'][index]
+    #     q_min = df['CurQty'][index] / np.exp(-beta_min * df['CurPrice'][index])
+    #     max_beta_rev = evaluation.calculate_revenue(prices, beta_max, q_max)
+    #     min_beta_rev = evaluation.calculate_revenue(prices, beta_min, q_min)
+    #     max_beta_prof = evaluation.calculate_profit(prices, beta_max, q_max, cost)
+    #     min_beta_prof = evaluation.calculate_profit(prices, beta_min, q_min, cost)
+    # revenue = evaluation.calculate_revenue(prices, beta, q)
+    # profit = evaluation.calculate_profit(prices, beta, q, cost)
+    sns.set(font_scale=1.6, rc={'lines.linewidth': 2.5})
+    fig, ax = plt.subplots()
     plt.plot(revenue, profit, 'r', label='Price Frontier')
-    if bounds == 1:
-        plt.plot(max_beta_rev, max_beta_prof, 'r--', label='Price Frontier Error Bounds')
-        plt.plot(min_beta_rev, min_beta_prof, 'r--')
+    # if bounds == 1:
+    # plt.plot(upper_rev, upper_prof, 'r--', label='Price Frontier Error Bounds')
+    # plt.plot(lower_rev, lower_prof, 'r--')
     plt.plot(df.loc[index, 'CurRev'], df.loc[index, 'CurProfit'], 'ob', label='Current Price Point')
     plt.xlabel('Revenue ($)')
     plt.ylabel('Profit ($)')
+    ax.ticklabel_format(style='sci', scilimits=(0,0), axis='both', useMathText=True)
     plt.title('Revenue Profit Curve')
     plt.legend()
     plt.tight_layout()
     return fig
 
+def find_rev_and_prof_ef(df):
+    '''This function finds the maximum and minimum profit and revenue for the efficient
+    frontier of the provided dataframe'''
+    rev, prof, all_prices = efficient_frontier.build_efficient_frontier(df)
+    rev_min = []
+    rev_max = []
+    prof_min = []
+    prof_max = []
+    for prices in all_prices:
+        max_beta = 1 / df['AlphaMax']
+        min_beta = 1 / df['AlphaMin']
+        max_q = df['Q']*np.exp(-df['FcstBeta']*df['CurPrice'])/np.exp(-max_beta*df['CurPrice'])
+        min_q = df['Q']*np.exp(-df['FcstBeta']*df['CurPrice'])/np.exp(-min_beta*df['CurPrice'])
+        rev_min.append(evaluation.calculate_revenue(prices, min_beta, min_q).sum())
+        rev_max.append(evaluation.calculate_revenue(prices, max_beta, max_q).sum())
+        prof_min.append(evaluation.calculate_profit(prices, min_beta, min_q, df['Cost']).sum())
+        prof_max.append(evaluation.calculate_profit(prices, max_beta, max_q, df['Cost']).sum())
+    return rev, prof, rev_min, prof_min, rev_max, prof_max
+
 def efficient_frontier_plot(df):
     '''This function makes a plot of maximum revenue vs profit for the provided dataframe'''
-    rev, prof, _ = efficient_frontier.build_efficient_frontier(df)
-    sns.set()
-    fig = plt.figure()
+    rev, prof, _, _, _, _ = find_rev_and_prof_ef(df)
+    sns.set(font_scale=1.6, rc={'lines.linewidth': 2.5})
+    fig, ax = plt.subplots()
     plt.plot(rev, prof, 'r', label='Efficient Frontier')
-    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'k.', label='Current Position')
+    plt.plot(df['CurRev'].sum(), df['CurProfit'].sum(), 'ko', label='Current Position')
+    plt.plot(rev[0], prof[0], 'ro', label='Maximize Revenue')
+    plt.plot(rev[-1], prof[-1], 'go', label='Maximize Profit')
     plt.xlabel('Revenue ($)')
     plt.ylabel('Profit ($)')
     plt.title('Profit Vs Revenue')
+    ax.ticklabel_format(style='sci', scilimits=(0,0), axis='both', useMathText=True)
     plt.legend()
     plt.tight_layout()
     return fig
@@ -235,7 +283,7 @@ def plot_q(df, index):
     current_price = df['CurPrice'][index]
     beta = df['FcstBeta'][index]
     q = df['Q'][index]
-    price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=1.)
+    price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=1.0)
     prices = price_variants+current_price
     sns.set()
     fig = plt.figure()
@@ -253,6 +301,31 @@ def plot_q(df, index):
     plt.xlabel('Price ($)')
     plt.ylabel('Quantity (#)')
     plt.title('Quantity vs price')
+    plt.legend()
+    plt.tight_layout()
+    return fig
+
+def plot_quantity(df, index):
+    '''This function plots Q vs price for a variety of prices for the dataframe's indexed row'''
+    current_price = df['CurPrice'][index]
+    beta = df['FcstBeta'][index]
+    q = df['Q'][index]
+    price_variants = efficient_frontier.find_price_variants(current_price, max_change_percent=1.)
+    prices = price_variants+current_price
+    sns.set(font_scale=1.6, rc={'lines.linewidth': 2.5})
+    fig, ax = plt.subplots()
+    beta_max = 1/df['AlphaMin'][index]
+    beta_min = 1/df['AlphaMax'][index]
+    quantities, quant_upper, quant_lower = efficient_frontier.calculate_quantity(q, beta, current_price,
+                                                                                 prices, beta_min, beta_max)
+    plt.plot(prices, quantities, 'k', label='Quantity')
+    plt.axvline(x=current_price, color='b', linestyle='--', label='Current Price')
+    # plt.plot(prices, quant_upper, 'k--', label='Q Bounds')
+    # plt.plot(prices, quant_lower, 'k--')
+    plt.xlabel('Price ($)')
+    plt.ylabel('Quantity (#)')
+    plt.title('Quantity vs price')
+    ax.ticklabel_format(style='sci', scilimits=(0,0), axis='y', useMathText=True)
     plt.legend()
     plt.tight_layout()
     return fig
